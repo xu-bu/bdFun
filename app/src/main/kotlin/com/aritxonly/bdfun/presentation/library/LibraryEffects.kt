@@ -16,7 +16,11 @@ internal fun LibraryEffects(runtime: LibraryRuntime) {
     val chrome = runtime.chrome
     val ui = runtime.presentation
     LaunchedEffect(runtime.interaction, runtime.pager.currentPage) { runtime.interaction.pageChanged() }
-    BackHandler { if (runtime.interaction.back()) runtime.navigation.onBack() }
+    BackHandler {
+        if (runtime.currentMode == 0 && runtime.data.state.value.favorites.opened != null) {
+            runtime.closeFolder()
+        } else if (runtime.interaction.back()) runtime.navigation.onBack()
+    }
     LaunchedEffect(chrome.scrollTopRequest) {
         val tick = chrome.scrollTopRequest
         if (tick != ui.consumedScrollTop) { ui.consumedScrollTop = tick; if (tick > 0) ui.scrollTopTick = tick }

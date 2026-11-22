@@ -6,7 +6,9 @@ data class CacheVideoInfo(val bvid: String, val aid: Long, val cid: Long, val ti
 data class CacheVideoFiles(val qualityId: Int, val qualityLabel: String,
     val videoPath: String = "", val audioPath: String = "", val coverPath: String = "")
 data class CacheTransferState(val progress: Float = 0f, val bytes: Long = 0L,
-    val totalBytes: Long = 0L, val status: CacheStatus = CacheStatus.Queued)
+    val totalBytes: Long = 0L, val status: CacheStatus = CacheStatus.Queued,
+    /** 实时下载速度（字节/秒）；瞬态字段，不写入持久化 JSON。 */
+    val speedBps: Long = 0L)
 /** 一条记录仍只对应当前视频当前 P；分组不改变持久化的平铺字段。 */
 data class CachedVideo(val id: String, val video: CacheVideoInfo, val files: CacheVideoFiles,
     val transfer: CacheTransferState, val createdAt: Long, val error: String? = null) {
@@ -27,6 +29,7 @@ data class CachedVideo(val id: String, val video: CacheVideoInfo, val files: Cac
     val bytes get() = transfer.bytes
     val totalBytes get() = transfer.totalBytes
     val status get() = transfer.status
+    val speedBps get() = transfer.speedBps
 }
 data class CacheDestination(val folder: String, val videoPart: String, val audioPart: String,
     val videoFile: String, val audioFile: String, val coverFile: String)

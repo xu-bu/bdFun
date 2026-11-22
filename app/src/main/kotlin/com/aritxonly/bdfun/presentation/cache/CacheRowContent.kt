@@ -40,6 +40,7 @@ internal fun androidx.compose.foundation.layout.RowScope.CacheRowContent(entry: 
                 CacheStatus.Completed ->
                     "${entry.qualityLabel} · ${formatCacheSize(entry.totalBytes)}"
                 CacheStatus.Failed -> entry.error ?: "缓存失败"
+                CacheStatus.Downloading -> "${entry.qualityLabel} · ${(entry.progress * 100).toInt()}% · ${formatSpeed(entry.speedBps)}"
                 else -> "${entry.qualityLabel} · ${(entry.progress * 100).toInt()}%"
             },
             color = if (entry.status == CacheStatus.Failed) {

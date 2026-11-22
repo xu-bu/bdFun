@@ -28,6 +28,27 @@ class CacheDownloadProgressTest {
         now = 5439; progress.update(40, false); assertFalse(progress.persist)
         now = 10219; progress.update(50, true); assertTrue(progress.persist)
     }
+    @Test fun seededProgressStartsAtResumedBytesAndSpeedIsSmoothed() {
+        var now = 1000L
+        val progress = CacheDownloadProgress(cacheEntry(), 1000, { now }, videoSeed = 400L)
+        assertEquals(400L, progress.current.bytes)
+        assertEquals(0.4f, progress.current.progress)
+        now = 2000; val first = progress.update(500, false)!!
+        assertEquals(0L, first.speedBps) // 首次采样只建立基线
+        now = 3000; val second = progress.update(800, false)!!
+        assertEquals(300L, second.speedBps)
+        now = 4000; val third = progress.update(1100, false)!!
+        assertEquals(300L, third.speedBps)
+    }
+    @Test fun speedContinuesSamplingDuringUiThrottle() {
+        var now = 1000L
+        val progress = CacheDownloadProgress(cacheEntry(), 100_000, { now })
+        progress.update(1000, false)
+        now = 1100; assertNull(progress.update(2000, false))
+        now = 1300; val published = progress.update(3000, false)!!
+        assertEquals(8750L, published.speedBps)
+        assertEquals(3000L, published.bytes)
+    }
     @Test fun zeroOrOverrunByteCountsKeepOriginalBounds() {
         var now = 220L; val progress = CacheDownloadProgress(cacheEntry(), 0, { now })
         assertEquals(0f, progress.update(0, false)!!.progress)

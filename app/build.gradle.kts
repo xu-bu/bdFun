@@ -144,6 +144,7 @@ dependencies {
     implementation(project(":feature:video"))
     implementation(project(":infra:storage"))
     implementation(project(":infra:playback"))
+    implementation(project(":infra:cast"))
     implementation(project(":infra:bili"))
     implementation(project(":core:navigation"))
     implementation(project(":core:application"))

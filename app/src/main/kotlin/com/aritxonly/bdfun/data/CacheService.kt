@@ -15,6 +15,7 @@ import androidx.core.content.ContextCompat
 import com.aritxonly.bdfun.AppGraph
 import com.aritxonly.bdfun.core.model.cache.CacheStatus
 import com.aritxonly.bdfun.CacheActivity
+import com.aritxonly.bdfun.ui.formatSpeed
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -84,10 +85,11 @@ class CacheService : Service() {
                 .toInt()
                 .coerceIn(0, 100)
         }
+        val speed = formatSpeed(active.sumOf { it.speedBps })
         val text = when {
             active.isEmpty() -> "准备中"
-            active.size > 1 -> "${active.size} 个视频 · $progress%"
-            else -> "${active[0].title.take(18)} · $progress%"
+            active.size > 1 -> "${active.size} 个视频 · $progress% · $speed"
+            else -> "${active[0].title.take(18)} · $progress% · $speed"
         }
         val intent = Intent(this, CacheActivity::class.java)
         val pending = PendingIntent.getActivity(

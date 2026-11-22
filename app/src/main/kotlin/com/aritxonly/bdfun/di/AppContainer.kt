@@ -41,6 +41,28 @@ internal class AppContainer(
     /** 视频页「回到首页」需要跨 Activity 通知主壳切回推荐页。 */
     val mainTabRequests = com.aritxonly.bdfun.MainTabRequestStateHolder()
     val videoLinkResolver: VideoLinkResolver = com.aritxonly.bdfun.infra.bili.BiliVideoLinkResolver()
+    /** 投屏设备发现；扫描页按账号无关的进程级依赖使用。 */
+    val castDeviceRepository: com.aritxonly.bdfun.core.domain.cast.CastDeviceRepository by lazy {
+        com.aritxonly.bdfun.infra.cast.AndroidCastDeviceRepository(requireNotNull(context))
+    }
+    /** 每次投屏会话创建一个 NVA 长连接客户端；会话结束由 CastSessionController 关闭。 */
+    fun createNvaClient(): com.aritxonly.bdfun.infra.cast.NvaClient =
+        com.aritxonly.bdfun.infra.cast.NvaClient()
+    /** NVA 的 Play 需要 access_key 才能让电视取到高清流与弹幕（TV 端另需登录）。 */
+    val castAccessKey: () -> String = { api.cookieJar.value("access_key") }
+    /**
+     * 进程级投屏会话：扫描页选中设备后即 finish 回视频页，会话必须活过那个 Activity。
+     * 用独立的 SupervisorJob，避免随任何页面生命周期被取消导致电视收不到 Stop/遥控指令。
+     */
+    val castSession: com.aritxonly.bdfun.presentation.cast.CastSessionController by lazy {
+        com.aritxonly.bdfun.presentation.cast.CastSessionController(
+            videoRepository = videoRepository,
+            videoPlaybackRepository = videoPlaybackRepository,
+            accessKey = castAccessKey,
+            clientFactory = ::createNvaClient,
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+        )
+    }
     val liveReads by lazy {
         com.aritxonly.bdfun.feature.live.application.LiveReadAccess(
             com.aritxonly.bdfun.infra.bili.BiliLiveRepository(api), loginStatus,
@@ -92,6 +114,33 @@ internal class AppContainer(
         api::danmaku,
         { detail -> api.cloudResumePositionMs(detail.aid, detail.cid, detail.duration) },
     )
+    // 缓存失败项重试：B 站直链有时效，必须现取 videoDetail + playInfo 才能重新下载。
+    init {
+        videoCache?.setRetryResolver { entry ->
+            val detail = when (val r = videoRepository.videoDetail(entry.bvid)) {
+                is com.aritxonly.bdfun.core.common.Outcome.Success -> r.value
+                is com.aritxonly.bdfun.core.common.Outcome.Failure ->
+                    return@setRetryResolver com.aritxonly.bdfun.core.common.Outcome.Failure(r.error)
+            }
+            val play = when (val r = videoPlaybackRepository.playInfo(
+                VideoStreamRequest(detail, entry.qualityId, entry.cid, entry.durationSec,
+                    settings.codecPreference, settings.cdnService))) {
+                is com.aritxonly.bdfun.core.common.Outcome.Success -> r.value
+                is com.aritxonly.bdfun.core.common.Outcome.Failure ->
+                    return@setRetryResolver com.aritxonly.bdfun.core.common.Outcome.Failure(r.error)
+            }
+            val videoUrl = play.qualities.firstOrNull { it.id == entry.qualityId }?.videoUrl
+                ?: play.fallbackUrl
+            val audioUrl = play.audioUrl
+            if (videoUrl.isNullOrBlank() || audioUrl.isNullOrBlank()) {
+                com.aritxonly.bdfun.core.common.Outcome.Failure(
+                    com.aritxonly.bdfun.core.common.AppError.Parsing("该清晰度暂无可用下载地址"))
+            } else {
+                com.aritxonly.bdfun.core.common.Outcome.Success(
+                    com.aritxonly.bdfun.core.application.CacheRetryUrls(videoUrl, audioUrl))
+            }
+        }
+    }
     private val bufferHistory by lazy {
         com.aritxonly.bdfun.infra.storage.AndroidBufferHistoryStore(requireNotNull(context))
     }

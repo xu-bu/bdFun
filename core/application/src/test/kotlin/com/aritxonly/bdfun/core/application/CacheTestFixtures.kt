@@ -65,15 +65,18 @@ internal open class CacheFilesFake : VideoCacheStorage {
 }
 internal open class CacheTransferFake(val storage: CacheFilesFake) : VideoCacheTransfer {
     val calls = mutableListOf<String>()
+    val resumeCalls = mutableListOf<String>()
     var gate: CompletableDeferred<Unit>? = null
     var clock = 10_000L
     var result: Outcome<Long>? = null
     override suspend fun contentLength(url: String): Long { calls += "HEAD:$url"; return if (url == "video") 100 else 20 }
-    override suspend fun download(url: String, target: String, onBytes: suspend (Long) -> Unit): Outcome<Long> {
-        calls += "GET:$url"; gate?.await()
+    override suspend fun download(url: String, target: String, onBytes: suspend (Long) -> Unit): Outcome<Long> =
+        download(url, target, 0L, onBytes)
+    override suspend fun download(url: String, target: String, resumeFrom: Long, onBytes: suspend (Long) -> Unit): Outcome<Long> {
+        calls += "GET:$url"; resumeCalls += "$url@$resumeFrom"; gate?.await()
         val bytes = if (url == "video") 100L else 20L
-        storage.sizes[target] = bytes; clock += 220; onBytes(bytes)
-        return result ?: Outcome.Success(bytes)
+        storage.sizes[target] = resumeFrom + bytes; clock += 220; onBytes(resumeFrom + bytes)
+        return result ?: Outcome.Success(resumeFrom + bytes)
     }
     override suspend fun cover(url: String, target: String): String { calls += "COVER:$url"; storage.sizes[target] = 1; return target }
 }

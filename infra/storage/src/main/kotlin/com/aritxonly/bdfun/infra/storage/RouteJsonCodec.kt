@@ -40,6 +40,10 @@ class RouteJsonCodec {
             is Route.Feed -> {
                 put("type", "dynamic"); put("id", route.id); put("snapshot", route.snapshot?.let(::dynamic))
             }
+            is Route.Cast -> {
+                put("type", "cast"); put("bvid", route.bvid); put("cid", route.cid)
+                put("startSec", route.startSec); put("quality", route.quality)
+            }
         }
     }.toString()
 
@@ -56,6 +60,8 @@ class RouteJsonCodec {
                 value.optJSONObject("snapshot")?.let(::readVideo), value.optBoolean("fromVideoPage"),
                 value.optLong("commentRoot"), value.optLong("commentTarget"), value.optLong("seekMs"))
             "dynamic" -> Route.Feed(value.getString("id"), value.optJSONObject("snapshot")?.let(::readFeed))
+            "cast" -> Route.Cast(value.optString("bvid"), value.optLong("cid"),
+                value.optInt("startSec"), value.optInt("quality"))
             else -> null
         }
     } catch (_: Exception) { null }

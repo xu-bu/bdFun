@@ -103,4 +103,10 @@ class RouteJsonCodecTest {
     @Test fun privateChatDefaultsMatchTheOriginalIntentDefaults() {
         assertEquals(Route.PrivateChat(42), codec.decode("""{"version":1,"type":"private-chat","talkerId":42}"""))
     }
+    @Test fun castRouteKeepsVideoIdentityAndStartPositionAcrossProcessRecreation() {
+        val route = Route.Cast("BVcast", 987654321L, startSec = 42, quality = 80)
+        assertEquals(route, codec.decode(codec.encode(route)))
+        // 老版本 JSON 没有进度/清晰度字段，靠默认值兼容。
+        assertEquals(Route.Cast(), codec.decode("""{"version":1,"type":"cast"}"""))
+    }
 }

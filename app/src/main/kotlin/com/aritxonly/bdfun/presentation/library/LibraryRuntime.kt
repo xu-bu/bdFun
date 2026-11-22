@@ -23,13 +23,24 @@ internal class LibraryRuntime(
     suspend fun loadWatchLater() { data.loadWatchLater(); interaction.resetWatchLaterCount() }
     fun loadMore(mode: Int) {
         when(mode) {
-            0 -> scope.launch { data.loadMoreFolders() }
+            0 -> scope.launch {
+                val fav = data.state.value.favorites
+                when {
+                    fav.opened != null -> data.loadMoreOpened()
+                    fav.subTab == 1 || fav.subTab == 2 -> data.loadMoreFolderList()
+                    fav.subTab == 3 || fav.subTab == 4 -> data.loadMoreBangumi()
+                    else -> data.loadMoreFolders()
+                }
+            }
             1 -> scope.launch { data.loadMoreHistory() }
             2 -> interaction.showMoreWatchLater(data.state.value.watchLater.size)
         }
     }
     fun selectMode(target: Int) { interaction.pageChanged(); scope.launch { pager.animateScrollToPage(target) } }
     fun selectFolder(index: Int) { interaction.selectFolder(); scope.launch { data.loadFolder(index) } }
+    fun selectSubTab(tab: Int) { interaction.selectFolder(); data.selectSubTab(tab); scope.launch { data.loadSubTab() } }
+    fun openFolder(folder: FavoriteFolder) { interaction.selectFolder(); data.openFolder(folder); scope.launch { data.loadOpened() } }
+    fun closeFolder() { data.closeOpened() }
     fun batchAction(key: String) {
         val selected = interaction.batchAction(key, currentMode, data.state.value) ?: return
         scope.launch { data.deleteSelected(selected.mode, selected.ids)?.let { context.showToast(it) } }

@@ -70,6 +70,24 @@ class LibraryResponseMapperTest {
         assertFalse(mapFavoriteVideos(raw.put("has_more", false)).second)
     }
 
+    @Test fun favoriteSubTabMappersReadDefaultIdMetadataAndSeasonPageBoundary() {
+        assertEquals(42L, mapDefaultFolderId(JSONObject("""{"default_folder":{"folder_detail":{"id":42}}}""")))
+        assertEquals(43L, mapDefaultFolderId(JSONObject("""{"default_folder":{"info":{"id":43}}}""")))
+        assertEquals(0L, mapDefaultFolderId(JSONObject("{}")))
+        val page = mapFavoriteFolderPage(JSONObject("""{"list":[
+            {"id":1,"title":"默认","media_count":9},
+            {"id":2,"title":"私密","media_count":3,"attr":2,"ctime":1700000000,"type":21}],"has_more":true}"""))
+        assertEquals(2, page.first.size)
+        assertFalse(page.first[0].privateFolder)
+        assertTrue(page.first[1].privateFolder)
+        assertEquals(21, page.first[1].type)
+        assertEquals(1_700_000_000L, page.first[1].createdAt)
+        assertTrue(page.second)
+        val season = mapSeasonVideos(JSONObject("""{"medias":[{"bvid":"BV1","id":1}],"info":{"media_count":1}}"""))
+        assertEquals(1, season.first.size)
+        assertFalse(season.second)
+    }
+
     @Test fun relationMappingKeepsRawPaginationAndEventTimeLoginReads() {
         val raw = JSONArray().put(JSONObject().put("mid", 0))
         repeat(19) { raw.put(JSONObject().put("mid", 9)) }

@@ -3,6 +3,7 @@ package com.aritxonly.bdfun.feature.library.application
 import com.aritxonly.bdfun.core.common.*
 import com.aritxonly.bdfun.core.domain.LibraryRepository
 import com.aritxonly.bdfun.core.model.library.*
+import com.aritxonly.bdfun.core.model.pgc.BangumiCard
 import com.aritxonly.bdfun.core.model.video.VideoItem
 import kotlinx.coroutines.*
 import org.junit.Assert.*
@@ -16,6 +17,11 @@ class LibraryStateHolderTest {
         var history = HistoryPage(emptyList(), 0, 0, "", false)
         var later = emptyList<HistoryItem>()
         var success = true
+        var defaultId = 1L
+        var created = emptyList<FavoriteFolder>()
+        var collected = emptyList<FavoriteFolder>()
+        var season = emptyList<VideoItem>()
+        var bangumiCards = emptyList<BangumiCard>()
         val removed = mutableListOf<Pair<Long, Long>>()
         val added = mutableListOf<Pair<Long, Long>>()
         var requestedCursor: Triple<Long, Long, String>? = null
@@ -25,6 +31,11 @@ class LibraryStateHolderTest {
             loadingVideo?.invoke(folderId)
             return Outcome.Success(videos to (page == 1))
         }
+        override suspend fun defaultFolderId() = Outcome.Success(defaultId)
+        override suspend fun createdFolders(page: Int) = Outcome.Success(created to false)
+        override suspend fun collectedFolders(page: Int) = Outcome.Success(collected to false)
+        override suspend fun seasonVideos(seasonId: Long, page: Int) = Outcome.Success(season to false)
+        override suspend fun bangumi(page: Int, type: Int) = Outcome.Success(bangumiCards to false)
         override suspend fun history(max: Long, viewAt: Long, business: String): Outcome<HistoryPage> {
             requestedCursor = Triple(max, viewAt, business); return Outcome.Success(history)
         }
@@ -105,5 +116,45 @@ class LibraryStateHolderTest {
         job.cancelAndJoin()
         assertFalse(holder.state.value.favorites.loadingMore)
         assertTrue(holder.state.value.favorites.hasMore)
+    }
+
+    @Test fun defaultFolderIsSelectedByServerId() = runBlocking {
+        val source = Fake(); source.defaultId = 2L; source.videos = listOf(video(1))
+        val holder = LibraryStateHolder(source); holder.loadFavorites()
+        assertEquals(1, holder.state.value.favorites.index)
+        assertEquals("目标夹", holder.state.value.favorites.folders[1].title)
+    }
+
+    @Test fun subTabsLoadCreatedCollectedAndBangumi() = runBlocking {
+        val source = Fake()
+        source.created = listOf(
+            FavoriteFolder(1, "默认", 0, ""),
+            FavoriteFolder(10, "自建", 3, "", type = 0, privateFolder = true, createdAt = 1_700_000_000L),
+        )
+        source.collected = listOf(FavoriteFolder(20, "合集", 38, "", type = 21))
+        source.bangumiCards = listOf(BangumiCard(99, "番剧", "", indexShow = "全12话"))
+        val holder = LibraryStateHolder(source)
+        holder.selectSubTab(1); holder.loadSubTab()
+        assertEquals(1, holder.state.value.favorites.subTab)
+        assertEquals(listOf(10L), holder.state.value.favorites.created.folders.map { it.id })
+        assertTrue(holder.state.value.favorites.created.folders.single().privateFolder)
+        holder.selectSubTab(2); holder.loadSubTab()
+        assertEquals(21, holder.state.value.favorites.collected.folders.single().type)
+        holder.selectSubTab(3); holder.loadSubTab()
+        assertEquals(99L, holder.state.value.favorites.bangumi[1]!!.items.single().seasonId)
+        holder.selectSubTab(4); holder.loadSubTab()
+        assertEquals(99L, holder.state.value.favorites.bangumi[2]!!.items.single().seasonId)
+    }
+
+    @Test fun openingUgcSeasonLoadsSeasonVideosAndBackRestoresTab() = runBlocking {
+        val source = Fake(); source.season = listOf(video(5))
+        val holder = LibraryStateHolder(source)
+        holder.selectSubTab(2); holder.loadSubTab()
+        holder.openFolder(FavoriteFolder(20, "合集", 1, "", type = 21))
+        holder.loadOpened()
+        assertEquals(listOf("BV5"), holder.state.value.favorites.opened?.videos?.map { it.bvid })
+        holder.closeOpened()
+        assertEquals(2, holder.state.value.favorites.subTab)
+        assertNull(holder.state.value.favorites.opened)
     }
 }

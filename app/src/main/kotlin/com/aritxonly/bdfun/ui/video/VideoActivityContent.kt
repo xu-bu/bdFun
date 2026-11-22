@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.aritxonly.bdfun.presentation.cast.CastStatusPill
 
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
@@ -56,7 +57,11 @@ internal fun VideoActivityContent(
                 showBackgroundDisc = false,
             ),
             slots = ActivityPageSlots(
-                overlay = { VideoActivityOverlay(layout, ui, pager, scope, contentBackdrop) },
+                overlay = {
+                    VideoActivityOverlay(layout, ui, pager, scope, contentBackdrop)
+                    // 投屏常驻按钮：右上角显示设备名，点击停止投屏并恢复手机声音。
+                    CastStatusPill()
+                },
             ),
         ) {
             VideoActivityBody(isLoggedIn, settings, VideoActivityScene(video, commentRequest), layout, ui, pager, scope, host,

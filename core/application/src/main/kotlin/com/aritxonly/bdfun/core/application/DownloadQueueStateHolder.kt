@@ -1,5 +1,7 @@
 package com.aritxonly.bdfun.core.application
 
+import com.aritxonly.bdfun.core.common.AppError
+import com.aritxonly.bdfun.core.common.Outcome
 import com.aritxonly.bdfun.core.domain.*
 import com.aritxonly.bdfun.core.model.cache.*
 import com.aritxonly.bdfun.core.model.video.*
@@ -9,10 +11,22 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import java.util.concurrent.ConcurrentHashMap
 
+/** 重试时重新解析出的下载直链（B 站链接有时效，失败后必须现取）。 */
+data class CacheRetryUrls(val videoUrl: String, val audioUrl: String)
+
 /** 进程下载队列；每个任务有独立身份，旧回调和 finally 不得覆盖同 id 的重下任务。 */
 class DownloadQueueStateHolder(private val storage: VideoCacheStorage, transfer: VideoCacheTransfer,
     private val scope: CoroutineScope, private val uiDispatcher: CoroutineDispatcher,
     private val startService: () -> Unit, private val now: () -> Long = System::currentTimeMillis) {
+    /**
+     * 失败项重试用的直链解析器，由 app 层注入（需要 videoRepository + playInfo，core 层拿不到）。
+     * 未注入时 [retry] 返回 false，调用方提示用户。
+     */
+    private var retryResolver: (suspend (CachedVideo) -> Outcome<CacheRetryUrls>)? = null
+    fun setRetryResolver(resolver: suspend (CachedVideo) -> Outcome<CacheRetryUrls>) {
+        retryResolver = resolver
+    }
+
     private val mutable = MutableStateFlow<List<CachedVideo>>(emptyList())
     val state = mutable.asStateFlow()
     val items get() = state.value
@@ -72,6 +86,57 @@ class DownloadQueueStateHolder(private val storage: VideoCacheStorage, transfer:
         job.start()
         return true
     }
+    /**
+     * 重试失败项：重新解析直链后从已有 .part 断点续传。返回 false 表示不可重试（解析器缺失/条目不存在/非失败态）。
+     * 解析在后台进行，期间条目保持 Queued 并显示"正在重试…"。
+     */
+    fun retry(id: String): Boolean {
+        if (closed) return false
+        val entry = items.firstOrNull { it.id == id } ?: return false
+        if (entry.status != CacheStatus.Failed) return false
+        val resolver = retryResolver ?: return false
+        // 重置状态并给新 token，让旧回调/finally 不会覆盖这次重试；保留 bytes/progress 供断点续传显示。
+        mutable.update { list -> list.map {
+            if (it.id == id) it.copy(transfer = it.transfer.copy(status = CacheStatus.Queued, speedBps = 0L), error = null) else it
+        } }
+        persistNow()
+        startService()
+        val token = Any()
+        tokens[id] = token
+        val job = scope.launch(start = CoroutineStart.LAZY) {
+            val urls = when (val r = resolver(entry)) {
+                is Outcome.Success -> r.value
+                is Outcome.Failure -> {
+                    withContext(uiDispatcher) {
+                        if (tokens[id] === token) mutable.update { list -> list.map {
+                            if (it.id == id) it.copy(
+                                transfer = it.transfer.copy(status = CacheStatus.Failed, speedBps = 0L),
+                                error = "重新获取下载地址失败：${errorText(r)}",
+                            ) else it
+                        } }
+                    }
+                    return@launch
+                }
+            }
+            val destination = storage.prepare(id)
+            // 清掉上次失败的错误文案，否则成功路径沿用旧 entry 会把 error 带进完成态；进度种子保留。
+            val fresh = entry.copy(transfer = entry.transfer.copy(status = CacheStatus.Queued, speedBps = 0L), error = null)
+            val request = CacheDownloadRequest(fresh, urls.videoUrl, urls.audioUrl, destination)
+            run(request, token)
+        }
+        jobs[id] = job
+        job.start()
+        return true
+    }
+
+    private fun errorText(result: Outcome.Failure) = when (val e = result.error) {
+        is AppError.Network -> e.message
+        is AppError.Unknown -> e.message
+        is AppError.Parsing -> e.message
+        is AppError.RiskControl -> e.message
+        AppError.LoginExpired -> "请先登录"
+    }
+
     fun delete(id: String) {
         if (!loaded) deletedDuringLoad += id
         tokens.remove(id)

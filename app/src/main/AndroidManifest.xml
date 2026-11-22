@@ -101,6 +101,10 @@
             android:name=".MySentActivity"
             android:exported="false" />
         <activity
+            android:name=".CastActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|uiMode|smallestScreenSize|density" />
+        <activity
             android:name=".VideoActivity"
             android:exported="false"
             android:screenOrientation="unspecified"

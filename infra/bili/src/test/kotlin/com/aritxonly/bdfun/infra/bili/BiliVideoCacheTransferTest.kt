@@ -54,6 +54,38 @@ class BiliVideoCacheTransferTest {
         assertEquals("", BiliVideoCacheTransfer(client { response(it, 500) }).cover("https://example.test/cover", target.path))
         assertEquals("", BiliVideoCacheTransfer(client { response(it) }).cover("https://example.test/cover", target.path))
     }
+    @Test fun resumeAppendsOnlyWhenServerConfirmsExactRange() = runBlocking {
+        val original = ByteArray(100) { 1 }
+        val target = temp.newFile("video.part"); target.writeBytes(original)
+        val transport = BiliVideoCacheTransfer(client { request ->
+            assertEquals("bytes=100-", request.header("Range"))
+            response(request, code = 206, bytes = byteArrayOf(2, 3))
+                .newBuilder().header("Content-Range", "bytes 100-101/102").build()
+        })
+        val samples = mutableListOf<Long>()
+        assertEquals(Outcome.Success(102L), transport.download("https://example.test/video", target.path, 100L) { samples += it })
+        assertArrayEquals(original + byteArrayOf(2, 3), target.readBytes())
+        assertEquals(listOf(102L), samples)
+    }
+    @Test fun resumeFallsBackToFullDownloadWhenRangeIsIgnoredOrMismatched() = runBlocking {
+        for (serverCode in listOf(200, 206)) {
+            val target = temp.newFile("video-$serverCode.part"); target.writeBytes(ByteArray(100) { 1 })
+            val transport = BiliVideoCacheTransfer(client { request ->
+                response(request, code = serverCode, bytes = byteArrayOf(9, 9))
+                    .newBuilder().header("Content-Range", "bytes 700-701/702").build()
+            })
+            val samples = mutableListOf<Long>()
+            assertEquals(Outcome.Success(2L), transport.download("https://example.test/video", target.path, 100L) { samples += it })
+            assertArrayEquals(byteArrayOf(9, 9), target.readBytes())
+            assertEquals(listOf(2L), samples)
+        }
+    }
+    @Test fun plainDownloadDoesNotSendRangeHeader() = runBlocking {
+        val transport = BiliVideoCacheTransfer(client { request ->
+            assertNull(request.header("Range")); response(request, bytes = byteArrayOf(1))
+        })
+        assertEquals(Outcome.Success(1L), transport.download("https://example.test/video", temp.newFile().path) {})
+    }
     @Test fun cancellationFromByteCallbackPropagatesInsteadOfCachingFailure() = runBlocking {
         val transport = BiliVideoCacheTransfer(client { response(it, bytes = ByteArray(100)) })
         try {

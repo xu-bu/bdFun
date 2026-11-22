@@ -26,6 +26,8 @@ interface PlaybackController {
     fun pause()
     fun seekTo(positionMs: Long)
     fun setSpeed(speed: Float)
+    /** 投屏时把手机播放器静音；默认空实现，避免影响测试替身与其它实现。 */
+    fun setMuted(muted: Boolean) {}
     fun acknowledgeEnd()
     fun release()
     fun addListener(listener: Listener)
@@ -35,6 +37,8 @@ interface PlaybackController {
         fun onRenderedFirstFrame() {}
         fun onPlayingChanged(playing: Boolean) {}
         fun onPhaseChanged(phase: PlaybackPhase) {}
+        /** 播放器发生 seek（进度条拖动/手势/系统控件），投屏借此把进度同步到电视。 */
+        fun onSeek(positionMs: Long) {}
         fun onError(error: PlaybackFailure) {}
     }
 }

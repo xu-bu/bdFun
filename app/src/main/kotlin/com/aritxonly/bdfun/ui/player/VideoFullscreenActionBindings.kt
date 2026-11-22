@@ -169,7 +169,21 @@ internal class VideoFullscreenActionBindings(
     }
 
     private val onCast: () -> Unit = {
-        context.showToast("当前没有可用的投屏设备")
+        touch()
+        val session = com.aritxonly.bdfun.AppGraph.castSession
+        if (session.state.value.status == com.aritxonly.bdfun.presentation.cast.CastStatus.Playing) {
+            // 投屏中再点一次即停止（选完设备就回了视频页，遥控页不再是唯一退出入口）。
+            session.disconnect()
+            context.showToast("已停止投屏")
+        } else {
+            com.aritxonly.bdfun.navigateToCast(
+                context,
+                VideoPageBus.currentBvid,
+                fullscreenInfo.currentCid,
+                startSec = (playback.refresh().positionMs / 1000).toInt(),
+                quality = settings.qualityPreference,
+            )
+        }
     }
 
     private val onAudioOnlyChanged: (Boolean) -> Unit = { enabled ->

@@ -152,6 +152,15 @@ fun navigateToVideoAtComment(
         commentTarget = targetRpid, seekMs = seekMs,
     )))
 }
+/** 从播放器打开投屏设备扫描页；带上视频标识与手机当前进度/清晰度，供电视对齐起点。 */
+fun navigateToCast(
+    context: Context, bvid: String, cid: Long = 0L,
+    startSec: Int = 0, quality: Int = 0,
+) {
+    context.teakTapHaptic()
+    context.startActivity(createRouteIntent(context, Route.Cast(bvid, cid, startSec, quality)))
+}
+
 /** roomId为0时沿用main的热门房间/本地占位回退。 */
 fun navigateToLiveRoom(context: Context, roomId: Long = 0L) {
     context.startActivity(Intent(context, LiveRoomActivity::class.java)

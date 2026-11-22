@@ -71,6 +71,8 @@ include(":infra:storage")
 
 include(":infra:playback")
 
+include(":infra:cast")
+
 include(":feature:home")
 include(":tools:kotlin-audit")
 

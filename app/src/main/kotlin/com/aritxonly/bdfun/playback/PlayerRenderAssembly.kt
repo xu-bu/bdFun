@@ -1,6 +1,7 @@
 package com.aritxonly.bdfun.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.aritxonly.bdfun.BrandPink
@@ -16,6 +17,12 @@ internal fun rememberPlayerRenderPorts(
     val page = LocalVideoPageState.current
     val settings = page.settings
     val viewer = com.aritxonly.bdfun.AppGraph.session.value
+    // 把手机播放器交给进程级投屏会话：投屏后静音、拖进度同步电视都靠它。
+    DisposableEffect(playback) {
+        val session = com.aritxonly.bdfun.AppGraph.castSession
+        session.attachPhonePlayback(playback)
+        onDispose { session.detachPhonePlayback(playback) }
+    }
     val fsActions = VideoFullscreenActionBindings(context, playback, presentation.fullscreenInfo, actions, ui, page).create()
     return PlayerRenderPorts(
         page = page,

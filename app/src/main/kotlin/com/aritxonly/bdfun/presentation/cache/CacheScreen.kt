@@ -25,7 +25,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 
 @Composable
-internal fun CacheScreen(queue: DownloadQueueStateHolder, onOpen: (com.aritxonly.bdfun.core.model.video.VideoItem) -> Unit) {
+internal fun CacheScreen(
+    queue: DownloadQueueStateHolder,
+    onOpen: (com.aritxonly.bdfun.core.model.video.VideoItem) -> Unit,
+    onOpenDetail: (String) -> Unit,
+) {
     val colors = MiuixTheme.colorScheme
     val context = LocalContext.current
     val entries by queue.state.collectAsState()
@@ -77,6 +81,21 @@ internal fun CacheScreen(queue: DownloadQueueStateHolder, onOpen: (com.aritxonly
                             video = queue.video(entry),
                             radiusPx = cacheRadiusPx,
                         ) { onOpen(queue.video(entry)) }
+                    },
+                    onOpenDetail = {
+                        val bvid = entry.bvid
+                        if (bvid.isBlank()) {
+                            context.showToast("该缓存缺少视频标识，无法打开详情")
+                        } else {
+                            onOpenDetail(bvid)
+                        }
+                    },
+                    onRetry = {
+                        if (queue.retry(entry.id)) {
+                            context.showToast("正在重新缓存…")
+                        } else {
+                            context.showToast("暂时无法重试，请删除后重新缓存")
+                        }
                     },
                     onDelete = {
                         queue.delete(entry.id)

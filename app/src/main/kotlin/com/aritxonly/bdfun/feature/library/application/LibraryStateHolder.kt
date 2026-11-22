@@ -3,6 +3,7 @@ package com.aritxonly.bdfun.feature.library.application
 import com.aritxonly.bdfun.core.common.*
 import com.aritxonly.bdfun.core.domain.LibraryRepository
 import com.aritxonly.bdfun.core.model.library.*
+import com.aritxonly.bdfun.core.model.pgc.BangumiCard
 import com.aritxonly.bdfun.core.model.video.VideoItem
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
@@ -11,11 +12,31 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
+internal data class FolderListState(
+    val folders: List<FavoriteFolder> = emptyList(), val page: Int = 1,
+    val hasMore: Boolean = false, val ready: Boolean = false, val revision: Int = 0,
+)
+internal data class BangumiListState(
+    val items: List<BangumiCard> = emptyList(), val page: Int = 1,
+    val hasMore: Boolean = false, val ready: Boolean = false, val revision: Int = 0,
+)
+internal data class OpenedFolderState(
+    val folder: FavoriteFolder, val videos: List<VideoItem> = emptyList(), val page: Int = 1,
+    val hasMore: Boolean = false, val loadingMore: Boolean = false, val ready: Boolean = false,
+    val revision: Int = 0,
+)
 internal data class FavoriteUiState(
     val folders: List<FavoriteFolder> = emptyList(), val index: Int = 0,
     val videos: List<VideoItem> = emptyList(), val page: Int = 1,
     val hasMore: Boolean = false, val loadingMore: Boolean = false, val ready: Boolean = false,
     val revision: Int = 0,
+    /** 收藏页二级 tab：0 默认收藏夹，1 我创建的，2 收藏与订阅，3 追番，4 追剧。 */
+    val subTab: Int = 0, val subRevision: Int = 0,
+    /** 服务端识别的默认夹 ID；创建列表里要排除它，避免和默认夹 tab 重复。 */
+    val defaultFolderId: Long = 0L,
+    val created: FolderListState = FolderListState(), val collected: FolderListState = FolderListState(),
+    val bangumi: Map<Int, BangumiListState> = emptyMap(),
+    val opened: OpenedFolderState? = null,
 )
 internal data class HistoryUiState(
     val entries: List<HistoryItem> = emptyList(), val max: Long = 0, val viewAt: Long = 0,
@@ -66,13 +87,21 @@ internal class LibraryStateHolder(
         try {
             when (val result = request { repository.folders() }) {
                 is Outcome.Success -> {
+                    // 默认夹按服务端 ID 识别，不依赖名称或列表顺序；识别失败退回首项。
+                    val defaultId = when (val id = request { repository.defaultFolderId() }) {
+                        is Outcome.Success -> id.value
+                        is Outcome.Failure -> 0L
+                    }
+                    val index = if (defaultId > 0L) result.value.indexOfFirst { it.id == defaultId } else -1
+                    val selected = if (index >= 0) index else 0
                     mutable.update { it.copy(
                         favorites = it.favorites.copy(
                             folders = result.value,
-                            index = 0,
+                            index = selected,
+                            defaultFolderId = defaultId,
                         ),
                     ) }
-                    if (result.value.isEmpty()) error(0, "还没有收藏夹") else loadFolder(0)
+                    if (result.value.isEmpty()) error(0, "还没有收藏夹") else loadFolder(selected)
                 }
                 is Outcome.Failure -> error(0, result.error.messageOr("收藏夹加载失败"))
             }
@@ -119,6 +148,162 @@ internal class LibraryStateHolder(
                     error(0, result.error.messageOr("收藏夹加载失败"))
             }
         } finally { updateFavorite(initial.revision) { it.copy(loadingMore = false) } }
+    }
+
+    // ---- 收藏页二级 tab：默认夹 / 我创建的 / 收藏与订阅 / 追番 / 追剧 ----
+
+    fun selectSubTab(tab: Int) {
+        if (tab !in 0..4 || !isActive) return
+        val current = mutable.value.favorites
+        if (current.subTab == tab && current.opened == null) return
+        mutable.update { it.copy(favorites = it.favorites.copy(
+            subTab = tab, opened = null, subRevision = current.subRevision + 1)) }
+        error(0, null)
+    }
+
+    suspend fun loadSubTab() {
+        when (mutable.value.favorites.subTab) {
+            0 -> loadFavorites()
+            1 -> loadFolderList(1)
+            2 -> loadFolderList(2)
+            3 -> loadBangumi(1)
+            4 -> loadBangumi(2)
+        }
+    }
+
+    private fun subRevisionMatches(revision: Int) = mutable.value.favorites.subRevision == revision
+    private fun updateSub(revision: Int, transform: (FavoriteUiState) -> FavoriteUiState) = mutable.update {
+        if (isActive && it.favorites.subRevision == revision) it.copy(favorites = transform(it.favorites)) else it
+    }
+
+    private suspend fun loadFolderList(kind: Int) {
+        if (!isActive || mutable.value.loading[0] == true || mutable.value.busy) return
+        val defaultId = mutable.value.favorites.defaultFolderId.takeIf { it > 0L } ?:
+            when (val id = request { repository.defaultFolderId() }) {
+                is Outcome.Success -> id.value
+                is Outcome.Failure -> 0L
+            }
+        val revision = mutable.value.favorites.subRevision + 1
+        mutable.update { if (!isActive) it else it.copy(favorites = it.favorites.copy(subRevision = revision)) }
+        loading(0, true); error(0, null)
+        try {
+            when (val result = request { if (kind == 1) repository.createdFolders(1) else repository.collectedFolders(1) }) {
+                is Outcome.Success -> updateSub(revision) { state ->
+                    val folders = if (kind == 1) result.value.first.filter { it.id != defaultId } else result.value.first
+                    val page = FolderListState(folders, 1, result.value.second, true, revision)
+                    if (kind == 1) state.copy(created = page, defaultFolderId = defaultId) else state.copy(collected = page)
+                }
+                is Outcome.Failure -> if (subRevisionMatches(revision)) error(0, result.error.messageOr("收藏夹加载失败"))
+            }
+        } finally { if (subRevisionMatches(revision)) loading(0, false) }
+    }
+
+    suspend fun loadMoreFolderList() {
+        val state = mutable.value.favorites
+        val kind = when (state.subTab) { 1 -> 1; 2 -> 2; else -> return }
+        val page = if (kind == 1) state.created else state.collected
+        if (!isActive || !page.ready || !page.hasMore || mutable.value.loading[0] == true || mutable.value.busy) return
+        loading(0, true)
+        try {
+            when (val result = request {
+                if (kind == 1) repository.createdFolders(page.page + 1) else repository.collectedFolders(page.page + 1)
+            }) {
+                is Outcome.Success -> updateSub(page.revision) { fav ->
+                    val old = if (kind == 1) fav.created else fav.collected
+                    val merged = old.copy(folders = (old.folders + result.value.first).distinctBy { it.id },
+                        page = page.page + 1, hasMore = result.value.second)
+                    if (kind == 1) fav.copy(created = merged) else fav.copy(collected = merged)
+                }
+                is Outcome.Failure -> error(0, result.error.messageOr("加载更多失败"))
+            }
+        } finally { loading(0, false) }
+    }
+
+    private suspend fun loadBangumi(type: Int) {
+        if (!isActive || mutable.value.loading[0] == true || mutable.value.busy) return
+        val revision = mutable.value.favorites.subRevision + 1
+        mutable.update { if (!isActive) it else it.copy(favorites = it.favorites.copy(subRevision = revision)) }
+        loading(0, true); error(0, null)
+        try {
+            when (val result = request { repository.bangumi(1, type) }) {
+                is Outcome.Success -> updateSub(revision) { state ->
+                    state.copy(bangumi = state.bangumi + (type to
+                        BangumiListState(result.value.first, 1, result.value.second, true, revision)))
+                }
+                is Outcome.Failure -> if (subRevisionMatches(revision)) error(0, result.error.messageOr("加载失败"))
+            }
+        } finally { if (subRevisionMatches(revision)) loading(0, false) }
+    }
+
+    suspend fun loadMoreBangumi() {
+        val fav = mutable.value.favorites
+        val type = when (fav.subTab) { 3 -> 1; 4 -> 2; else -> return }
+        val page = fav.bangumi[type] ?: return
+        if (!isActive || !page.ready || !page.hasMore || mutable.value.loading[0] == true || mutable.value.busy) return
+        loading(0, true)
+        try {
+            when (val result = request { repository.bangumi(page.page + 1, type) }) {
+                is Outcome.Success -> updateSub(page.revision) { state ->
+                    val old = state.bangumi[type] ?: page
+                    state.copy(bangumi = state.bangumi + (type to old.copy(
+                        items = (old.items + result.value.first).distinctBy { it.seasonId },
+                        page = page.page + 1, hasMore = result.value.second)))
+                }
+                is Outcome.Failure -> error(0, result.error.messageOr("加载更多失败"))
+            }
+        } finally { loading(0, false) }
+    }
+
+    fun openFolder(folder: FavoriteFolder) {
+        if (!isActive) return
+        mutable.update { it.copy(favorites = it.favorites.copy(
+            opened = OpenedFolderState(folder), subRevision = it.favorites.subRevision + 1)) }
+    }
+    fun closeOpened() = mutable.update { if (!isActive) it else it.copy(favorites = it.favorites.copy(opened = null)) }
+
+    private fun openedRevisionMatches(revision: Int) = mutable.value.favorites.opened?.revision == revision
+    private fun updateOpened(revision: Int, transform: (OpenedFolderState) -> OpenedFolderState) = mutable.update {
+        val opened = it.favorites.opened
+        if (!isActive || opened == null || opened.revision != revision) it else
+            it.copy(favorites = it.favorites.copy(opened = transform(opened)))
+    }
+
+    suspend fun loadOpened() {
+        val opened = mutable.value.favorites.opened ?: return
+        if (opened.ready || mutable.value.loading[0] == true || mutable.value.busy) return
+        loading(0, true); error(0, null)
+        val revision = opened.revision + 1
+        updateOpened(opened.revision) { it.copy(revision = revision) }
+        try {
+            when (val result = request {
+                if (opened.folder.type == 21) repository.seasonVideos(opened.folder.id, 1)
+                else repository.videos(opened.folder.id, 1)
+            }) {
+                is Outcome.Success -> updateOpened(revision) { it.copy(
+                    videos = result.value.first, page = 1, hasMore = result.value.second, ready = true) }
+                is Outcome.Failure -> {
+                    if (openedRevisionMatches(revision)) error(0, result.error.messageOr("收藏夹加载失败"))
+                    updateOpened(revision) { it.copy(ready = true) }
+                }
+            }
+        } finally { if (openedRevisionMatches(revision)) loading(0, false) }
+    }
+
+    suspend fun loadMoreOpened() {
+        val opened = mutable.value.favorites.opened ?: return
+        if (!isActive || !opened.ready || !opened.hasMore || mutable.value.loading[0] == true || mutable.value.busy) return
+        loading(0, true)
+        try {
+            when (val result = request {
+                if (opened.folder.type == 21) repository.seasonVideos(opened.folder.id, opened.page + 1)
+                else repository.videos(opened.folder.id, opened.page + 1)
+            }) {
+                is Outcome.Success -> updateOpened(opened.revision) { it.copy(
+                    videos = (it.videos + result.value.first).distinctBy { video -> video.bvid },
+                    page = opened.page + 1, hasMore = result.value.second) }
+                is Outcome.Failure -> error(0, result.error.messageOr("加载更多失败"))
+            }
+        } finally { loading(0, false) }
     }
 
     suspend fun loadHistory() {
@@ -198,7 +383,8 @@ internal class LibraryStateHolder(
                 1 -> snapshot.history.entries.filter { it.bvid in ids }.map { it.bvid to it.aid }
                 else -> snapshot.watchLater.filter { it.bvid in ids }.map { it.bvid to it.aid }
             }
-            val folder = snapshot.favorites.folders.getOrNull(snapshot.favorites.index)
+            val folder = snapshot.favorites.opened?.folder
+                ?: snapshot.favorites.folders.getOrNull(snapshot.favorites.index)
             for ((bvid, aid) in targets) {
                 val result = when {
                     aid <= 0 -> null
@@ -219,7 +405,7 @@ internal class LibraryStateHolder(
     suspend fun transferSelected(moving: Boolean, target: FavoriteFolder, ids: Set<String>): String? {
         if (!isActive || ids.isEmpty() || mutable.value.busy || mutable.value.loading[0] == true) return null
         val snapshot = mutable.value.favorites
-        val source = snapshot.folders.getOrNull(snapshot.index) ?: return null
+        val source = snapshot.opened?.folder ?: snapshot.folders.getOrNull(snapshot.index) ?: return null
         // 移动到原收藏夹不应把刚添加成功的视频再删除。
         if (moving && target.id == source.id) return "已在「${target.title}」中"
         mutable.update { it.copy(busy = true) }
@@ -241,6 +427,8 @@ internal class LibraryStateHolder(
         0 -> it.copy(
             favorites = it.favorites.copy(
                 videos = it.favorites.videos.filterNot { video -> video.bvid in ids },
+                opened = it.favorites.opened?.let { opened -> opened.copy(
+                    videos = opened.videos.filterNot { video -> video.bvid in ids }) },
             ),
         )
         1 -> it.copy(history = it.history.copy(entries = it.history.entries.filterNot { entry -> entry.bvid in ids }))

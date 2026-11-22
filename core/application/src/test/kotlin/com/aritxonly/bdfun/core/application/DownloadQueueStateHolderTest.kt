@@ -41,10 +41,128 @@ class DownloadQueueStateHolderTest {
         val failed = queue.items.single()
         assertEquals(CacheStatus.Failed, failed.status); assertEquals("offline", failed.error)
         assertEquals(100L, failed.bytes); assertEquals(120L, failed.totalBytes)
-        assertTrue(files.sizes.isEmpty()); assertNull(queue.findPlayable(failed.bvid, 7))
+        // 失败保留 video.part 供续传；audio 尚未开始所以没有 .part。
+        assertEquals(100L, files.sizes["${failed.id}/video.part"])
+        assertFalse(files.sizes.containsKey("${failed.id}/audio.part"))
+        assertNull(queue.findPlayable(failed.bvid, 7))
         transfer.result = null; assertTrue(queue.enqueue(cacheDetail(), cacheQuality(), 7, "audio", 12))
         assertEquals(CacheStatus.Completed, queue.items.single().status); queue.close()
     }
+    @Test fun retryResolvesFreshUrlsAndCompletesFailedEntry() = runBlocking {
+        val files = CacheFilesFake()
+        val transfer = CacheTransferFake(files).apply { result = Outcome.Failure(AppError.Network("timeout")) }
+        val queue = cacheQueue(files, transfer); queue.initialize()
+        assertTrue(queue.enqueue(cacheDetail(), cacheQuality(), 7, "audio", 12))
+        assertEquals(CacheStatus.Failed, queue.items.single().status)
+
+        // 未注入解析器时不可重试
+        assertFalse(queue.retry(queue.items.single().id))
+
+        var resolvedCover: String? = null
+        queue.setRetryResolver { entry ->
+            resolvedCover = entry.cover
+            Outcome.Success(CacheRetryUrls("video", "audio"))
+        }
+        transfer.result = null
+        assertTrue(queue.retry(queue.items.single().id))
+        // Unconfined 下重试协程同步跑完
+        val after = queue.items.single()
+        assertEquals(CacheStatus.Completed, after.status)
+        assertNull(after.error)
+        assertEquals("https://cover", resolvedCover)
+        assertTrue(transfer.calls.contains("GET:video"))
+        queue.close()
+    }
+
+    @Test fun retryResumesVideoFromPartialBytes() = runBlocking {
+        val files = CacheFilesFake()
+        var firstAttempt = true
+        val transfer = object : CacheTransferFake(files) {
+            override suspend fun download(url: String, target: String, resumeFrom: Long,
+                onBytes: suspend (Long) -> Unit): Outcome<Long> {
+                calls += "GET:$url"; resumeCalls += "$url@$resumeFrom"; gate?.await()
+                if (firstAttempt && url == "video") {
+                    firstAttempt = false
+                    storage.sizes[target] = 40; clock += 220; onBytes(40)
+                    return Outcome.Failure(AppError.Network("cut"))
+                }
+                val bytes = (if (url == "video") 100L else 20L) - resumeFrom
+                storage.sizes[target] = resumeFrom + bytes; clock += 220; onBytes(resumeFrom + bytes)
+                return Outcome.Success(resumeFrom + bytes)
+            }
+        }
+        val queue = cacheQueue(files, transfer); queue.initialize()
+        queue.enqueue(cacheDetail(), cacheQuality(), 7, "audio", 12)
+        val id = queue.items.single().id
+        assertEquals(CacheStatus.Failed, queue.items.single().status)
+        assertEquals(40L, files.sizes["$id/video.part"])
+        assertEquals(40L, queue.items.single().bytes)
+
+        queue.setRetryResolver { Outcome.Success(CacheRetryUrls("video", "audio")) }
+        assertTrue(queue.retry(id))
+        val after = queue.items.single()
+        assertEquals(CacheStatus.Completed, after.status)
+        assertTrue(transfer.resumeCalls.contains("video@40"))
+        assertTrue(transfer.resumeCalls.contains("audio@0"))
+        assertEquals(120L, after.bytes)
+        queue.close()
+    }
+
+    @Test fun retrySkipsTrackAlreadyCommittedBeforeFailure() = runBlocking {
+        val files = CacheFilesFake()
+        var failAudio = true
+        val transfer = object : CacheTransferFake(files) {
+            override suspend fun download(url: String, target: String, resumeFrom: Long,
+                onBytes: suspend (Long) -> Unit): Outcome<Long> {
+                calls += "GET:$url"; resumeCalls += "$url@$resumeFrom"; gate?.await()
+                if (failAudio && url == "audio") return Outcome.Failure(AppError.Network("offline"))
+                val bytes = (if (url == "video") 100L else 20L) - resumeFrom
+                storage.sizes[target] = resumeFrom + bytes; clock += 220; onBytes(resumeFrom + bytes)
+                return Outcome.Success(resumeFrom + bytes)
+            }
+        }
+        val queue = cacheQueue(files, transfer); queue.initialize()
+        queue.enqueue(cacheDetail(), cacheQuality(), 7, "audio", 12)
+        val id = queue.items.single().id
+        assertEquals(CacheStatus.Failed, queue.items.single().status)
+        assertEquals(100L, files.sizes["$id/video.m4s"])
+        assertFalse(files.sizes.containsKey("$id/audio.part"))
+        val videoGets = transfer.calls.count { it == "GET:video" }
+
+        failAudio = false
+        queue.setRetryResolver { Outcome.Success(CacheRetryUrls("video", "audio")) }
+        assertTrue(queue.retry(id))
+        assertEquals(CacheStatus.Completed, queue.items.single().status)
+        assertEquals(videoGets, transfer.calls.count { it == "GET:video" })
+        assertEquals(2, transfer.calls.count { it == "GET:audio" })
+        queue.close()
+    }
+
+    @Test fun retryResolverFailureWritesErrorBackAndStaysFailed() = runBlocking {
+        val files = CacheFilesFake()
+        val transfer = CacheTransferFake(files).apply { result = Outcome.Failure(AppError.Network("timeout")) }
+        val queue = cacheQueue(files, transfer); queue.initialize()
+        assertTrue(queue.enqueue(cacheDetail(), cacheQuality(), 7, "audio", 12))
+        val id = queue.items.single().id
+        assertEquals(CacheStatus.Failed, queue.items.single().status)
+        queue.setRetryResolver { Outcome.Failure(AppError.Network("登录失效")) }
+        assertTrue(queue.retry(id))
+        val after = queue.items.single()
+        assertEquals(CacheStatus.Failed, after.status)
+        assertTrue(after.error!!.contains("登录失效"))
+        queue.close()
+    }
+
+    @Test fun retryIgnoresNonFailedEntries() = runBlocking {
+        val files = CacheFilesFake(); val transfer = CacheTransferFake(files).apply { gate = CompletableDeferred() }
+        val queue = cacheQueue(files, transfer); queue.initialize()
+        queue.enqueue(cacheDetail(), cacheQuality(), 7, "audio", 12)
+        queue.setRetryResolver { Outcome.Success(CacheRetryUrls("video", "audio")) }
+        // 正在下载，不是 Failed，retry 应拒绝
+        assertFalse(queue.retry(queue.items.single().id))
+        queue.close()
+    }
+
     @Test fun deletionCancelsTaskRemovesFilesAndDoesNotPublishFailureRow() = runBlocking {
         val files = CacheFilesFake(); val transfer = CacheTransferFake(files).apply { gate = CompletableDeferred() }
         val queue = cacheQueue(files, transfer); queue.initialize(); queue.enqueue(cacheDetail(), cacheQuality(), 7, "audio", 12)
@@ -56,7 +174,10 @@ class DownloadQueueStateHolderTest {
         val files = CacheFilesFake(); val oldGate = CompletableDeferred<Unit>(); val newGate = CompletableDeferred<Unit>()
         val running = mutableListOf<Job>()
         val transfer = object : CacheTransferFake(files) {
-            override suspend fun download(url: String, target: String, onBytes: suspend (Long) -> Unit): Outcome<Long> {
+            override suspend fun download(url: String, target: String, onBytes: suspend (Long) -> Unit): Outcome<Long> =
+                download(url, target, 0L, onBytes)
+            override suspend fun download(url: String, target: String, resumeFrom: Long,
+                onBytes: suspend (Long) -> Unit): Outcome<Long> {
                 val ordinal = running.size; running += currentCoroutineContext().job
                 storage.sizes[target] = if (ordinal == 0) 1 else 2
                 if (ordinal == 0) withContext(NonCancellable) { oldGate.await(); onBytes(1) }

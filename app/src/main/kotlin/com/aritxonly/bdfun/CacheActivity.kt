@@ -1,6 +1,7 @@
 package com.aritxonly.bdfun
 
 import com.aritxonly.bdfun.navigateToVideo
+import com.aritxonly.bdfun.navigateToVideoByBvid
 import com.aritxonly.bdfun.ui.ActivityPageOptions
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -24,7 +25,11 @@ class CacheActivity : ComponentActivity() {
                     title = "离线缓存",
                 ),
             ) {
-                CacheScreen(AppGraph.videoCache) { navigateToVideo(this@CacheActivity, it) }
+                CacheScreen(
+                    queue = AppGraph.videoCache,
+                    onOpen = { navigateToVideo(this@CacheActivity, it) },
+                    onOpenDetail = { bvid -> navigateToVideoByBvid(this@CacheActivity, bvid) },
+                )
             }
         }
     }

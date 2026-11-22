@@ -132,6 +132,41 @@ internal suspend fun BiliApiContext.favoriteVideosPage(folderId: Long, page: Int
         mapFavoriteVideos(data)
     }
 
+/** 服务端识别的默认收藏夹 ID；识别失败返回 0，调用方退回列表首项。 */
+internal suspend fun BiliApiContext.defaultFolderId(): Long = withContext(Dispatchers.IO) {
+    runCatching {
+        mapDefaultFolderId(dataRequest("/x/v3/fav/folder/space/v2", mapOf("up_mid" to mid.toString())))
+    }.getOrDefault(0L)
+}
+
+internal suspend fun BiliApiContext.createdFolders(page: Int): Pair<List<FavoriteFolder>, Boolean> =
+    withContext(Dispatchers.IO) {
+        val data = dataRequest(
+            "/x/v3/fav/folder/created/list",
+            mapOf("up_mid" to mid.toString(), "pn" to page.toString(), "ps" to "20", "platform" to "web"),
+        )
+        mapFavoriteFolderPage(data)
+    }
+
+internal suspend fun BiliApiContext.collectedFolders(page: Int): Pair<List<FavoriteFolder>, Boolean> =
+    withContext(Dispatchers.IO) {
+        val data = dataRequest(
+            "/x/v3/fav/folder/collected/list",
+            mapOf("up_mid" to mid.toString(), "pn" to page.toString(), "ps" to "20", "platform" to "web"),
+        )
+        mapFavoriteFolderPage(data)
+    }
+
+internal suspend fun BiliApiContext.seasonVideos(seasonId: Long, page: Int): Pair<List<VideoItem>, Boolean> =
+    withContext(Dispatchers.IO) {
+        val data = dataRequest(
+            "/x/space/fav/season/list",
+            mapOf("season_id" to seasonId.toString(), "mid" to mid.toString(),
+                "pn" to page.toString(), "ps" to "20", "platform" to "web"),
+        )
+        mapSeasonVideos(data)
+    }
+
 internal suspend fun BiliApiContext.relationStat(mid: Long): Pair<Long, Long> = withContext(Dispatchers.IO) {
     val data = dataRequest("/x/relation/stat", mapOf("vmid" to mid.toString()))
     mapRelationStat(data)

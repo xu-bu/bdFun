@@ -1,5 +1,6 @@
 package com.aritxonly.bdfun.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -25,9 +26,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aritxonly.bdfun.feature.library.application.*
@@ -52,6 +56,8 @@ internal fun LibraryModePage(content: LibraryModeContent, layout: LibraryModeLay
 private fun LibraryGrid(content: LibraryModeContent, layout: LibraryModeLayout, actions: LibraryModeActions,
     gridState: androidx.compose.foundation.lazy.grid.LazyGridState) {
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val context = LocalContext.current
+    val openScope = rememberCoroutineScope()
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         // 宽屏参照首页：卡片宽度限制在 280..560dp，多出来的空间自动加列，不再把两列卡片拉长。
         val wide = maxWidth >= 600.dp
@@ -73,7 +79,17 @@ private fun LibraryGrid(content: LibraryModeContent, layout: LibraryModeLayout, 
                     )
                 }
             }
-            if (layout.mode == 0) {
+            if (layout.mode == 0 && content.opened == null && content.subTab in 1..2) {
+                itemsIndexed(items = content.subFolders, key = { _, folder -> folder.id }) { _, folder ->
+                    LibraryFavoriteFolderCard(folder) { actions.onOpenFolder(folder) }
+                }
+            } else if (layout.mode == 0 && content.opened == null && content.subTab in 3..4) {
+                itemsIndexed(items = content.subBangumi, key = { _, item -> item.seasonId }) { _, item ->
+                    LibraryBangumiCard(item) {
+                        com.aritxonly.bdfun.presentation.pgc.openBangumi(context, item.seasonId, openScope)
+                    }
+                }
+            } else if (layout.mode == 0) {
                 itemsIndexed(items = content.folderVideos, key = { _, video -> video.bvid }) { index, video ->
                     LibraryFavoriteCard(video, index, content, layout, actions)
                 }
@@ -141,14 +157,23 @@ internal fun androidx.compose.foundation.lazy.grid.LazyGridScope.libraryGridHead
                 }
             }
 
-            if (mode == 0 && folders.isNotEmpty() && foldersReady) {
-                item(key = "folders", span = { GridItemSpan(maxLineSpan) }) {
-                    // 首次加载完成后再出现；之后切换收藏夹、重载列表时保持原位，不重播动画。
-                    LibraryFolderBar(
-                        folders = folders,
-                        selectedIndex = folderIndex,
-                        onSelect = onFolderSelect,
+            if (mode == 0 && content.opened != null) {
+                item(key = "folder-back", span = { GridItemSpan(maxLineSpan) }) {
+                    Text(
+                        text = "← 返回 · ${content.opened.folder.title}",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(interactionSource = null, indication = null, onClick = actions.onCloseFolder)
+                            .padding(vertical = 10.dp),
+                        color = MiuixTheme.colorScheme.onBackground,
+                        fontSize = 14.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
+                }
+            } else if (mode == 0) {
+                item(key = "favorite-sub-tabs", span = { GridItemSpan(maxLineSpan) }) {
+                    LibraryFavoriteSubTabs(content.subTab, actions.onSelectSubTab)
                 }
             }
 

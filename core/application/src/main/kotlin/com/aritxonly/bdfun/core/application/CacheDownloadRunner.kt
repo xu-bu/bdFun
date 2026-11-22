@@ -21,14 +21,21 @@ internal class CacheDownloadRunner(private val storage: VideoCacheStorage, priva
             checkCurrent(current)
             val audioLength = transfer.contentLength(request.audioUrl)
             val total = (videoLength.coerceAtLeast(0L) + audioLength.coerceAtLeast(0L)).takeIf { it > 0L } ?: 0L
-            val activeProgress = CacheDownloadProgress(entry, total, now)
+            // 续传：已完成轨直接跳过；部分完成的 .part 保留为下一次 Range 起点。
+            val video = readyTrack(destination.videoPart, destination.videoFile, videoLength)
+            val audio = readyTrack(destination.audioPart, destination.audioFile, audioLength)
+            val activeProgress = CacheDownloadProgress(entry, total, now, video.first, audio.first)
             progress = activeProgress
-            downloadTrack(request.videoUrl, destination.videoPart, false, activeProgress, current, publish, persist)
-            checkCurrent(current)
-            storage.commit(destination.videoPart, destination.videoFile)
-            downloadTrack(request.audioUrl, destination.audioPart, true, activeProgress, current, publish, persist)
-            checkCurrent(current)
-            storage.commit(destination.audioPart, destination.audioFile)
+            if (!video.second) {
+                downloadTrack(request.videoUrl, destination.videoPart, video.first, false, activeProgress, current, publish, persist)
+                checkCurrent(current)
+                storage.commit(destination.videoPart, destination.videoFile)
+            }
+            if (!audio.second) {
+                downloadTrack(request.audioUrl, destination.audioPart, audio.first, true, activeProgress, current, publish, persist)
+                checkCurrent(current)
+                storage.commit(destination.audioPart, destination.audioFile)
+            }
             entry = activeProgress.current
             val coverPath = transfer.cover(entry.cover, destination.coverFile)
             checkCurrent(current)
@@ -40,18 +47,31 @@ internal class CacheDownloadRunner(private val storage: VideoCacheStorage, priva
             if (cleanupAllowed()) storage.removePartial(destination)
             throw cancel
         } catch (failure: Exception) {
-            if (cleanupAllowed()) storage.removePartial(destination)
+            // 失败时刻意保留 .part：重试时按 Range 从断点继续，而不是重新下载整条轨。
             if (!current()) return
             entry = progress?.current ?: entry
-            entry = entry.copy(transfer = entry.transfer.copy(status = CacheStatus.Failed),
+            entry = entry.copy(transfer = entry.transfer.copy(status = CacheStatus.Failed, speedBps = 0L),
                 error = failure.message ?: "下载失败")
             publish(entry); persist()
         }
     }
-    private suspend fun downloadTrack(url: String, target: String, audio: Boolean, progress: CacheDownloadProgress,
+
+    /** @return 已下载字节数（作为进度种子和 Range 起点）到是否该轨已完整。 */
+    private fun readyTrack(part: String, target: String, expected: Long): Pair<Long, Boolean> {
+        val done = storage.size(target)
+        if (done > 0L && (expected <= 0L || done >= expected)) return done to true
+        val partial = storage.size(part)
+        if (partial > 0L && expected > 0L && partial >= expected) {
+            storage.commit(part, target)
+            return partial to true
+        }
+        return partial to false
+    }
+
+    private suspend fun downloadTrack(url: String, target: String, resumeFrom: Long, audio: Boolean, progress: CacheDownloadProgress,
         current: () -> Boolean, publish: suspend (CachedVideo) -> Unit, persist: suspend () -> Unit) {
         checkCurrent(current)
-        when (val result = transfer.download(url, target) { done ->
+        when (val result = transfer.download(url, target, resumeFrom) { done ->
             checkCurrent(current)
             progress.update(done, audio)?.let { publish(it); if (progress.persist) persist() }
         }) {

@@ -36,6 +36,27 @@ internal suspend fun BiliApiContext.pgcFollowing(page: Int = 1, type: Int = 1): 
         }.getOrDefault(emptyList())
     }
 
+/** 追番/追剧分页版：保留 total 以便判断末页（旧 [pgcFollowing] 只取第一页列表）。 */
+internal suspend fun BiliApiContext.pgcFollowingPage(page: Int, type: Int): Pair<List<BangumiCard>, Boolean> =
+    withContext(Dispatchers.IO) {
+        if (!isLoggedIn || mid <= 0L) return@withContext emptyList<BangumiCard>() to false
+        cancellableCatching {
+            val data = dataRequest(
+                "/x/space/bangumi/follow/list",
+                mapOf(
+                    "vmid" to mid.toString(), "type" to type.toString(), "follow_status" to "0",
+                    "pn" to page.toString(), "ps" to "20",
+                ),
+                referer = pgcReferer,
+            )
+            val list = data.optJSONArray("list")
+            val cards = if (list == null) emptyList() else
+                (0 until list.length()).mapNotNull { list.optJSONObject(it)?.toBangumiCard() }
+            val total = data.optLong("total", 0L)
+            cards to (total > 0L && page.toLong() * 20L < total)
+        }.getOrDefault(emptyList<BangumiCard>() to false)
+    }
+
 /**
  * 番剧/影视推荐（PiliPlus 番剧索引同款 /pgc/season/index/result）。
  * order=3 为「追番人数」排序，接口因此会带回 order 字段（xx万追番）。

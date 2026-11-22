@@ -18,4 +18,12 @@ sealed interface Route {
         val talkerId: Long, val sessionType: Int = 1, val name: String = "", val avatar: String = "",
         val unread: Int = 0, val maxSeqno: Long = 0,
     ) : Route
+    /**
+     * 投屏设备扫描页。带上正在看的视频标识与手机当前进度/清晰度：
+     * 电视从手机这一刻的位置开始播，清晰度与手机保持一致。
+     */
+    data class Cast(
+        val bvid: String = "", val cid: Long = 0,
+        val startSec: Int = 0, val quality: Int = 0,
+    ) : Route
 }

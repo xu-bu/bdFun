@@ -129,8 +129,18 @@ class Media3PlaybackController(
     }
     override fun play() { if (!released) { player.play(); refresh() } }
     override fun pause() { if (!released) { player.pause(); refresh() } }
-    override fun seekTo(positionMs: Long) { if (!released) { player.seekTo(positionMs); refresh() } }
+    override fun seekTo(positionMs: Long) {
+        if (!released) {
+            player.seekTo(positionMs)
+            refresh()
+            // 投屏会话挂了 Listener 在手机上，这里把 seek 广播出去同步电视。
+            listeners.forEach { runCatching { it.onSeek(positionMs) } }
+        }
+    }
     override fun setSpeed(speed: Float) { if (!released) { player.setPlaybackSpeed(speed); refresh() } }
+    override fun setMuted(muted: Boolean) {
+        if (!released) player.volume = if (muted) 0f else 1f
+    }
     override fun acknowledgeEnd() { mutableState.value = mutableState.value.copy(ended = false) }
     override fun addListener(listener: PlaybackController.Listener) { listeners.addIfAbsent(listener) }
     override fun removeListener(listener: PlaybackController.Listener) { listeners.remove(listener) }

@@ -6,6 +6,11 @@ import com.aritxonly.bdfun.core.model.library.HistoryItem
 class BiliLibraryRepository(private val backend: BiliBackend) : LibraryRepository {
     override suspend fun folders() = biliOutcome { backend.favoriteFolders() }
     override suspend fun videos(folderId: Long, page: Int) = biliOutcome { backend.favoriteVideosPage(folderId, page) }
+    override suspend fun defaultFolderId() = biliOutcome { backend.defaultFolderId() }
+    override suspend fun createdFolders(page: Int) = biliOutcome { backend.createdFolders(page) }
+    override suspend fun collectedFolders(page: Int) = biliOutcome { backend.collectedFolders(page) }
+    override suspend fun seasonVideos(seasonId: Long, page: Int) = biliOutcome { backend.seasonVideos(seasonId, page) }
+    override suspend fun bangumi(page: Int, type: Int) = biliOutcome { backend.bangumi(page, type) }
     override suspend fun history(max: Long, viewAt: Long, business: String) = biliOutcome { backend.historyPage(max, viewAt, business) }
     override suspend fun enrich(items: List<HistoryItem>) = biliOutcome { backend.enrichHistoryStats(items) }
     override suspend fun watchLater() = biliOutcome { backend.watchLater() }

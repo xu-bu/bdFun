@@ -63,6 +63,18 @@ object AppGraph {
         checkNotNull(container) { "AppGraph 尚未初始化" }.relationFeedStateHolder(mid, fans, frequent)
     internal val videoCache get() = checkNotNull(container?.videoCache) { "AppGraph 尚未使用 Context 初始化" }
     internal val loginStatus get() = checkNotNull(container) { "AppGraph 尚未初始化" }.loginStatus
+    internal val castDeviceRepository: com.aritxonly.bdfun.core.domain.cast.CastDeviceRepository
+        get() = checkNotNull(container) { "AppGraph 尚未初始化" }.castDeviceRepository
+    internal fun createNvaClient() = checkNotNull(container) { "AppGraph 尚未初始化" }.createNvaClient()
+    internal val castAccessKey: () -> String
+        get() = checkNotNull(container) { "AppGraph 尚未初始化" }.castAccessKey
+    internal val videoRepositoryForCast: com.aritxonly.bdfun.core.domain.VideoRepository
+        get() = checkNotNull(container) { "AppGraph 尚未初始化" }.videoRepository
+    internal val videoPlaybackRepositoryForCast: com.aritxonly.bdfun.core.domain.VideoPlaybackRepository
+        get() = checkNotNull(container) { "AppGraph 尚未初始化" }.videoPlaybackRepository
+    /** 进程级投屏会话，视频页与扫描页共用同一个实例。 */
+    internal val castSession: com.aritxonly.bdfun.presentation.cast.CastSessionController
+        get() = checkNotNull(container) { "AppGraph 尚未初始化" }.castSession
     internal fun incomingVideoLinks() = com.aritxonly.bdfun.core.application.IncomingVideoLinkStateHolder(
         checkNotNull(container) { "AppGraph 尚未初始化" }.videoLinkResolver)
     internal fun createQrLogin() = checkNotNull(container) { "AppGraph 尚未初始化" }.createQrLogin()

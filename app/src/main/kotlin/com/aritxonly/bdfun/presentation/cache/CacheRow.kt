@@ -20,6 +20,8 @@ internal fun CacheRow(
     entry: CachedVideo,
     cover: String,
     onOpen: () -> Unit,
+    onOpenDetail: () -> Unit,
+    onRetry: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val colors = MiuixTheme.colorScheme
@@ -39,6 +41,6 @@ internal fun CacheRow(
         Spacer(Modifier.width(10.dp))
         CacheRowContent(entry)
         Spacer(Modifier.width(8.dp))
-        CacheRowActions(entry.status == CacheStatus.Completed, onOpen, onDelete)
+        CacheRowActions(entry.status, onOpen, onOpenDetail, onRetry, onDelete)
     }
 }

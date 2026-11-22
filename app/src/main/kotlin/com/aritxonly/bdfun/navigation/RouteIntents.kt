@@ -20,6 +20,7 @@ internal fun createRouteIntent(context: Context, route: Route): Intent {
         is Route.Space -> SpaceActivity::class.java
         is Route.Feed -> FeedDetailActivity::class.java
         is Route.PrivateChat -> com.aritxonly.bdfun.PrivateChatActivity::class.java
+        is Route.Cast -> com.aritxonly.bdfun.CastActivity::class.java
     }
     return Intent(context, target).putExtra(EXTRA_ROUTE, codec.encode(route)).apply {
         if (route is Route.Video) {
