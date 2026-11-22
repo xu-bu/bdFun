@@ -22,6 +22,7 @@ internal class SettingsStateHolder private constructor(private val groups: Setti
             migrateSettings0(prefs)
             migrateSettings1(prefs)
             migrateSettings2(prefs)
+            migrateSettings3(prefs)
             val values = SettingsValuesStateHolder()
             val floats = FloatSettingsWriter(prefs, scope)
             return SettingsStateHolder(SettingsGroups(

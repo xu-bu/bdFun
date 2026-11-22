@@ -21,6 +21,7 @@ internal fun androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridSco
                 actions.open(item)
             },
                 onOpenVideo = { actions.onOpenVideo(it) },
+                onCacheVideo = actions::cacheVideo,
                 onLike = { actions.like(item) },
                 onComment = { actions.onOpenFeed(item) },
                 onRepost = { actions.onOpenFeed(item) },

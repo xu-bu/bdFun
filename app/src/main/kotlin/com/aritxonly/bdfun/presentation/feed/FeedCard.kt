@@ -77,9 +77,12 @@ internal fun FeedCard(
             })
         }
         FeedCardPgc(item, actions.onOpen)
-        FeedCardAttachments(item, actions, presentation) { video ->
-            oneTake.open(context, video, cardRadiusPx) { actions.onOpenVideo(video) }
-        }
+        FeedCardAttachments(item, actions, presentation,
+            onOpenVideo = { video ->
+                oneTake.open(context, video, cardRadiusPx) { actions.onOpenVideo(video) }
+            },
+            onCacheVideo = actions.onCacheVideo,
+        )
         FeedCardFooter(item, presentation.liked, actions)
     }
 }

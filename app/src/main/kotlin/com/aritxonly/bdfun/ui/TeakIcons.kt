@@ -12,6 +12,7 @@ internal object TeakIcon {
     val Coin = com.aritxonly.teak.common.icons.LucideIcons.CoinsFilled
     val Star = R.drawable.act_star
     val Share = R.drawable.act_share
+    val Cache = com.aritxonly.teak.common.icons.LucideIcons.ArrowDownToLine
 
     val CommentBubble = R.drawable.comment_bubble
     fun like(liked: Boolean): Int = if (liked) R.drawable.comment_like_filled else R.drawable.comment_like

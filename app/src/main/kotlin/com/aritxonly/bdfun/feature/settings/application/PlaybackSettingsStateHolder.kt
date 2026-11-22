@@ -64,9 +64,9 @@ internal class PlaybackSettingsStateHolder(
 
     private val autoPlayNextState = stateCell("autoPlayNextState", prefs.getBoolean("auto_play_next", true))
 
-    /** 动态页视频滚到屏幕中心附近时是否自动静音预览播放。 */
+    /** 动态页视频滚到屏幕中心附近时是否自动静音预览播放；默认关闭，需用户主动开启。 */
 
-    private val dynamicAutoPlayState = stateCell("dynamicAutoPlayState", prefs.getBoolean("dynamic_auto_play", true))
+    private val dynamicAutoPlayState = stateCell("dynamicAutoPlayState", prefs.getBoolean("dynamic_auto_play", false))
 
     /** 动态视频自动播放时是否静音（默认静音）。 */
 

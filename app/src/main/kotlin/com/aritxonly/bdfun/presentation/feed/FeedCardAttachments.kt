@@ -12,6 +12,7 @@ import com.aritxonly.bdfun.core.model.video.VideoItem
 internal fun FeedCardAttachments(
     item: FeedItem, actions: FeedCardActions, presentation: FeedCardPresentation,
     onOpenVideo: (VideoItem) -> Unit,
+    onCacheVideo: ((VideoItem) -> Unit)? = null,
 ) {
 
     item.liveRecommendation?.let { live ->
@@ -26,6 +27,7 @@ internal fun FeedCardAttachments(
             autoPlay = presentation.autoPlay,
             muted = presentation.muted,
             onOpenVideo = onOpenVideo,
+            onCacheVideo = onCacheVideo,
             onToggleMute = actions.onToggleMute,
         )
     }
@@ -36,6 +38,7 @@ internal fun FeedCardAttachments(
             item = orig,
             onOpen = { actions.onOpenForwarded(orig) },
             onOpenVideo = onOpenVideo,
+            onCacheVideo = onCacheVideo,
             autoPlay = presentation.autoPlay,
             muted = presentation.muted,
             onToggleMute = actions.onToggleMute,

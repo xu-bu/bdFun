@@ -672,7 +672,7 @@
             "pref_name": "dynamic_auto_play",
             "type": "switch",
             "title": "动态视频自动播放",
-            "default": true
+            "default": false
           },
           {
             "pref_name": "dynamic_auto_play_quality",

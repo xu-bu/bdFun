@@ -20,9 +20,9 @@ data class VideoMetadataContent(
     val upFollowers: Long, val upVideos: Long, val onlineCount: Long, val onlineText: String,
 )
 class VideoMetadataActions(
-    val toggleFollow: () -> Unit, val toggleLike: () -> Unit, val toggleDislike: () -> Unit,
+    val toggleFollow: () -> Unit, val toggleDislike: () -> Unit,
     val giveCoin: () -> Unit, val toggleFavorite: () -> Unit, val shareVideo: () -> Unit,
-    val tripleAction: () -> Unit, val onOpenSpace: () -> Unit,
+    val cacheVideo: () -> Unit, val onOpenSpace: () -> Unit,
 )
 class VideoDescriptionStateHolder {
     var expanded by mutableStateOf(false)

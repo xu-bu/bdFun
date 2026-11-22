@@ -91,6 +91,17 @@ class SettingsMigrationTest {
             assertEquals(1, restored.colorStyle)
         } finally { scope.cancel() }
     }
+    @Test fun dynamicAutoPlayDefaultsOffOnceButKeepsLaterUserChoice() {
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        try {
+            val prefs = MemorySettingsPreferences(linkedMapOf("dynamic_auto_play" to true))
+            val first = SettingsStateHolder.create(prefs, TestHistoryCodec, scope)
+            assertFalse(first.dynamicAutoPlay)
+            first.dynamicAutoPlay = true
+            assertTrue(SettingsStateHolder.create(prefs, TestHistoryCodec, scope).dynamicAutoPlay)
+        } finally { scope.cancel() }
+    }
+
     @Test fun legacySponsorSwitchMigratesToPromptOrOffButNeverAuto() {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
         try {

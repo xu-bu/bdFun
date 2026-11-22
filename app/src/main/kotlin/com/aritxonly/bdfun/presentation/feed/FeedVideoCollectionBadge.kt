@@ -17,13 +17,11 @@ import com.kyant.shapes.Capsule
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun androidx.compose.foundation.layout.BoxScope.FeedVideoCollectionBadge(isCollection: Boolean) {
+internal fun FeedVideoCollectionBadge(isCollection: Boolean) {
     val colors = MiuixTheme.colorScheme
     if (isCollection) {
         Box(
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 8.dp, end = 8.dp)
                 .width(42.dp)
                 .clip(Capsule())
                 .background(colors.primary.copy(alpha = 0.92f))

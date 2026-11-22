@@ -42,7 +42,7 @@ internal fun ActionStat(
     VideoActionVisual(modifier, label, value, iconRes, onClick, onLongPress != null, state, animatedTint, activity)
 }
 
-internal enum class ActionKind { ThumbUp, ThumbDown, Coin, Star, Share }
+internal enum class ActionKind { ThumbUp, ThumbDown, Coin, Star, Share, Download }
 
 @Composable
 internal fun MiniStat(text: String, playIcon: Boolean) {

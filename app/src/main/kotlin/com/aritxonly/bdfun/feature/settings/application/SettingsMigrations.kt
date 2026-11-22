@@ -76,3 +76,16 @@ internal fun migrateSettings2(prefs: SettingsPreferences) {
             prefs.edit().putInt("sponsor_skip_mode", if (legacy) 1 else 0).apply()
         }
     }
+
+/**
+ * 动态页改为「不点不播」：老版本把开关默认写成 true，升级时一次性改回 false。
+ * 之后用户若手动打开，仍按个人选择恢复自动预览。
+ */
+internal fun migrateSettings3(prefs: SettingsPreferences) {
+    if (!prefs.getBoolean("dynamic_auto_play_click_off_v1", false)) {
+        prefs.edit()
+            .putBoolean("dynamic_auto_play", false)
+            .putBoolean("dynamic_auto_play_click_off_v1", true)
+            .apply()
+    }
+}

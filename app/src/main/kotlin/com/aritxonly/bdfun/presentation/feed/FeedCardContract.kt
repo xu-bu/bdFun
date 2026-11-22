@@ -6,6 +6,7 @@ import com.aritxonly.bdfun.core.model.video.VideoItem
 internal data class FeedCardActions(
     val onOpen: () -> Unit,
     val onOpenVideo: (VideoItem) -> Unit,
+    val onCacheVideo: ((VideoItem) -> Unit)? = null,
     val onLike: () -> Unit,
     val onComment: () -> Unit,
     val onRepost: () -> Unit,

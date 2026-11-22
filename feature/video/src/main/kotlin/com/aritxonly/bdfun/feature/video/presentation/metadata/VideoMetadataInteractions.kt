@@ -8,9 +8,7 @@ import androidx.compose.ui.Modifier
 
 @Composable
 internal fun VideoMetadataInteractions(interaction: com.aritxonly.bdfun.feature.video.application.VideoInteractionState, actions: VideoMetadataActions, appearance: VideoMetadataAppearance, slots: VideoMetadataSlots) {
-    val liked = interaction.liked
     val disliked = interaction.disliked
-    val likedCount = interaction.likeCount
     val coined = interaction.coined
     val coinCount = interaction.coinCount
     val favorited = interaction.favorited
@@ -22,15 +20,13 @@ internal fun VideoMetadataInteractions(interaction: com.aritxonly.bdfun.feature.
     ) {
         ActionStat(
             modifier = Modifier.weight(1f),
-            label = "点赞",
-            value = likedCount,
-            kind = ActionKind.ThumbUp,
-            iconRes = appearance.icons.like,
+            label = "缓存",
+            value = 0,
+            kind = ActionKind.Download,
+            iconRes = appearance.icons.cache,
             accentColor = appearance.accentColor,
             activity = slots.activity,
-            active = liked,
-            onClick = { actions.toggleLike() },
-            onLongPress = { actions.tripleAction() },
+            onClick = { actions.cacheVideo() },
         )
         ActionStat(
             modifier = Modifier.weight(1f),

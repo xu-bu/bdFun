@@ -15,8 +15,8 @@ internal fun androidx.compose.foundation.layout.BoxScope.VideoScreenPager(
     val page = LocalVideoPageState.current
     val context = androidx.compose.ui.platform.LocalContext.current
     val renderActions = VideoDetailRenderActions(
-        VideoMetadataActions(actions::toggleFollow, actions::toggleLike, actions::toggleDislike,
-            actions::giveCoin, actions::toggleFavorite, actions::shareVideo, actions::tripleAction,
+        VideoMetadataActions(actions::toggleFollow, actions::toggleDislike,
+            actions::giveCoin, actions::toggleFavorite, actions::shareVideo, actions::cacheCurrentVideo,
             onOpenSpace = {
                 page.pauseAll()
                 navigateToSpace(context, content.read.detail?.ownerMid ?: content.video.ownerMid)

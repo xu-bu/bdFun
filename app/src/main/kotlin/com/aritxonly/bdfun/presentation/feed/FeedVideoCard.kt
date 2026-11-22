@@ -2,12 +2,16 @@ package com.aritxonly.bdfun.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -22,6 +26,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.aritxonly.bdfun.core.model.video.VideoItem
+import com.kyant.shapes.Capsule
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Download
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
@@ -31,6 +38,7 @@ internal fun FeedVideoCard(
     autoPlay: Boolean,
     muted: Boolean,
     onOpenVideo: (VideoItem) -> Unit,
+    onCacheVideo: ((VideoItem) -> Unit)? = null,
     onToggleMute: () -> Unit,
 ) {
     val colors = MiuixTheme.colorScheme
@@ -55,7 +63,32 @@ internal fun FeedVideoCard(
                 modifier = Modifier.fillMaxSize(),
             )
         }
-        FeedVideoCollectionBadge(isCollection)
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 8.dp, end = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            FeedVideoCollectionBadge(isCollection)
+            if (onCacheVideo != null) {
+                Box(
+                    modifier = Modifier
+                        .size(30.dp)
+                        .clip(Capsule())
+                        .background(colors.primary.copy(alpha = 0.92f))
+                        .clickable(interactionSource = null, indication = null) { onCacheVideo(video) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = MiuixIcons.Download,
+                        contentDescription = "缓存",
+                        modifier = Modifier.size(18.dp),
+                        tint = Color.White,
+                    )
+                }
+            }
+        }
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)

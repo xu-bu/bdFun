@@ -1,6 +1,7 @@
 package com.aritxonly.bdfun.ui
 
 import com.aritxonly.bdfun.core.domain.VideoStreamRequest
+import com.aritxonly.bdfun.core.domain.selectCacheQuality
 import com.aritxonly.bdfun.core.model.video.Quality
 import com.aritxonly.bdfun.core.model.video.VideoItem
 import com.aritxonly.bdfun.core.model.video.VideoPage
@@ -127,6 +128,21 @@ class VideoDetailViewActions(
                 reloadDanmaku = true,
             )
         }
+    }
+
+    /** 详情页缓存按钮：沿用播放器「更多-缓存」的清晰度选择与入队链路。 */
+    fun cacheCurrentVideo() {
+        val info = playInfo
+        if (info == null) {
+            host.showToast("暂无可用清晰度")
+            return
+        }
+        val quality = selectCacheQuality(info, qualityId)
+        if (quality == null) {
+            host.showToast("暂无可用清晰度")
+            return
+        }
+        cacheVideo(quality)
     }
 
     /** 缓存当前视频当前 P 的指定清晰度（视频轨 + 音轨）。 */

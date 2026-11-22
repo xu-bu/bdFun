@@ -23,6 +23,7 @@ internal fun ForwardedFeedBlock(
     item: FeedItem,
     onOpen: () -> Unit,
     onOpenVideo: (VideoItem) -> Unit,
+    onCacheVideo: ((VideoItem) -> Unit)? = null,
     autoPlay: Boolean,
     muted: Boolean,
     onToggleMute: () -> Unit,
@@ -75,6 +76,7 @@ internal fun ForwardedFeedBlock(
                 autoPlay = autoPlay,
                 muted = muted,
                 onOpenVideo = onOpenVideo,
+                onCacheVideo = onCacheVideo,
                 onToggleMute = onToggleMute,
             )
         }

@@ -16,7 +16,8 @@ internal class VideoMetadataAssembly(val appearance: VideoMetadataAppearance, va
 internal fun rememberVideoMetadataAssembly(): VideoMetadataAssembly {
     val context = LocalContext.current
     val icons = remember {
-        VideoActionIcons(TeakIcon.like(true), TeakIcon.Dislike, TeakIcon.Coin, TeakIcon.Star, TeakIcon.Share)
+        VideoActionIcons(TeakIcon.like(true), TeakIcon.Dislike, TeakIcon.Coin, TeakIcon.Star,
+            TeakIcon.Share, TeakIcon.Cache)
     }
     val slots = remember(context) {
         VideoMetadataSlots(
