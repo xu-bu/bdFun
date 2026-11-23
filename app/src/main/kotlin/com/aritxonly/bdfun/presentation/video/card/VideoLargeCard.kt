@@ -19,6 +19,10 @@ internal fun VideoLargeCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     progress: Float = 0f,
+    /** 首页推荐下点击 UP 名不跳转空间页。 */
+    ownerClickEnabled: Boolean = true,
+    /** 非空时在封面右上角显示缓存按钮。 */
+    onCacheVideo: ((VideoItem) -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
 ) {
     val colors = MiuixTheme.colorScheme
@@ -29,7 +33,7 @@ internal fun VideoLargeCard(
             .background(colors.surfaceContainer)
             .combinedClickable(interactionSource = null, indication = null, onClick = onClick, onLongClick = onLongClick),
     ) {
-        LargeVideoCover(video, progress)
-        LargeVideoContent(video)
+        LargeVideoCover(video, progress, onCacheVideo)
+        LargeVideoContent(video, ownerClickEnabled)
     }
 }

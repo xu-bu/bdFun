@@ -20,7 +20,7 @@ import com.aritxonly.bdfun.core.model.video.VideoItem
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun LargeVideoCover(video: VideoItem, progress: Float) {
+internal fun LargeVideoCover(video: VideoItem, progress: Float, onCacheVideo: ((VideoItem) -> Unit)? = null) {
     val colors = MiuixTheme.colorScheme
     Box(
         modifier = Modifier
@@ -53,5 +53,6 @@ internal fun LargeVideoCover(video: VideoItem, progress: Float) {
                     .background(colors.primary),
             )
         }
+        if (onCacheVideo != null) VideoCacheButton { onCacheVideo(video) }
     }
 }

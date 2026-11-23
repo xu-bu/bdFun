@@ -63,7 +63,25 @@ import com.aritxonly.bdfun.infra.bili.parseBiliCountText as parseCountText
 import com.aritxonly.bdfun.infra.bili.parseBiliDurationText as parseDurationText
 import com.aritxonly.bdfun.infra.bili.biliQualityLabel as qualityLabel
 
-internal suspend fun BiliApiContext.spaceVideos(mid: Long, page: Int): List<VideoItem> = withContext(Dispatchers.IO) {
+/**
+ * 投稿列表。order：0 从新到旧 / 1 播放最多 / 2 从旧到新。
+ * B 站 arc/search 只支持 pubdate(降序)、click、stow，没有升序；
+ * 从旧到新用 pubdate 取「倒数第 page 页」再页内反转来近似全局升序。
+ */
+internal suspend fun BiliApiContext.spaceVideos(mid: Long, page: Int, order: Int = 0): List<VideoItem> = withContext(Dispatchers.IO) {
+    val apiOrder = if (order == 1) "click" else "pubdate"
+    if (order != 2) return@withContext spaceVideosPage(mid, page, apiOrder).first
+    // 升序：第一次请求拿总页数，再取倒数对应页并反转。
+    val probe = spaceVideosPage(mid, 1, apiOrder)
+    val totalPages = probe.second.coerceAtLeast(1)
+    val target = totalPages - page + 1
+    if (target < 1) return@withContext emptyList()
+    val items = if (page == 1) probe.first else spaceVideosPage(mid, target, apiOrder).first
+    items.asReversed()
+}
+
+/** 取一页投稿，返回 (条目, 总页数)。 */
+private suspend fun BiliApiContext.spaceVideosPage(mid: Long, page: Int, apiOrder: String): Pair<List<VideoItem>, Int> =
     cancellableCatching {
         val data = dataRequest(
             "/x/space/wbi/arc/search",
@@ -71,7 +89,7 @@ internal suspend fun BiliApiContext.spaceVideos(mid: Long, page: Int): List<Vide
                 "mid" to mid.toString(),
                 "pn" to page.toString(),
                 "ps" to "30",
-                "order" to "pubdate",
+                "order" to apiOrder,
                 "web_location" to "1550101",
                 "dm_img_list" to "[]",
                 "dm_img_str" to "V2ViR0wgMS4wIChPcGVuR0wgRVMgMi4wIENocm9taXVtKQ",
@@ -81,9 +99,10 @@ internal suspend fun BiliApiContext.spaceVideos(mid: Long, page: Int): List<Vide
             signed = true,
             referer = "https://space.bilibili.com/$mid",
         )
-        mapSpaceVideos(data, this@spaceVideos::parseSpaceVideo)
-    }.getOrDefault(emptyList())
-}
+        val items = mapSpaceVideos(data, this@spaceVideosPage::parseSpaceVideo)
+        val pages = data.optJSONObject("page")?.optInt("pages", 0) ?: 0
+        items to pages
+    }.getOrDefault(emptyList<VideoItem>() to 0)
 
 /** 空间图文投稿。 */
 

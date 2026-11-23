@@ -166,7 +166,10 @@ class VideoActivity : ComponentActivity() {
             finish()
             return
         }
-        if (s.showDiscAfterVideo && s.exitVideoControl == 0) {
+        // 用户主动暂停后退出不进画中画；playWhenReady=false 表示暂停（缓冲中仍为 true）。
+        val playWhenReady = com.aritxonly.bdfun.ui.BackgroundPlayback.playbackSnapshot.playWhenReady
+        if (com.aritxonly.bdfun.core.domain.shouldEnterPipOnExit(
+                s.showDiscAfterVideo, s.exitVideoControl == 0, playWhenReady)) {
             val ok = runCatching {
                 val params = android.app.PictureInPictureParams.Builder()
                     .setAspectRatio(android.util.Rational(16, 9))

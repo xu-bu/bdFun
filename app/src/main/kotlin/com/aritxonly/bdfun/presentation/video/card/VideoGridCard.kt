@@ -25,6 +25,10 @@ internal fun VideoGridCard(
     reserveMeta: Boolean = false,
     /** 个人主页等场景不需要最下面的 UP 行。 */
     showOwner: Boolean = true,
+    /** 首页推荐下点击 UP 名不跳转空间页。 */
+    ownerClickEnabled: Boolean = true,
+    /** 非空时在封面右上角显示缓存按钮。 */
+    onCacheVideo: ((VideoItem) -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
 ) {
     val colors = MiuixTheme.colorScheme
@@ -35,7 +39,7 @@ internal fun VideoGridCard(
             .background(colors.surfaceContainer)
             .combinedClickable(interactionSource = null, indication = null, onClick = onClick, onLongClick = onLongClick),
     ) {
-        GridVideoCover(video, progress, selectionEnabled, selected, reserveMeta)
-        GridVideoContent(video, showOwner)
+        GridVideoCover(video, progress, selectionEnabled, selected, reserveMeta, onCacheVideo)
+        GridVideoContent(video, showOwner, ownerClickEnabled)
     }
 }

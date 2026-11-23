@@ -59,14 +59,17 @@ internal fun libraryModeContent(
     interaction: LibraryInteractionStateHolder, data: LibraryUiState, ui: LibraryInteractionState, mode: Int,
 ) = LibraryModeContent(
     data.favorites.folders, data.favorites.ready, data.favorites.index,
-    if (mode == 0 && data.favorites.opened != null) interaction.visibleVideos(data.favorites.opened.videos)
-    else interaction.visibleVideos(data.favorites.videos),
+    run {
+        val opened = data.favorites.opened
+        if (mode == 0 && opened != null) interaction.visibleVideos(opened.videos)
+        else interaction.visibleVideos(data.favorites.videos)
+    },
     interaction.visibleEntries(data.history.entries),
     interaction.visibleEntries(data.watchLater).take(ui.watchLaterVisibleCount), data.loading[mode] == true,
     data.errors[mode], ui.batchMode, ui.selected,
     when(mode) {
         0 -> when {
-            data.favorites.opened != null -> data.favorites.opened.hasMore
+            data.favorites.opened != null -> data.favorites.opened!!.hasMore
             data.favorites.subTab == 1 -> data.favorites.created.hasMore
             data.favorites.subTab == 2 -> data.favorites.collected.hasMore
             data.favorites.subTab == 3 -> data.favorites.bangumi[1]?.hasMore == true
@@ -76,20 +79,22 @@ internal fun libraryModeContent(
         1 -> data.history.hasMore
         else -> ui.watchLaterVisibleCount < data.watchLater.size
     },
-    subTab = data.favorites.subTab,
-    subFolders = when (data.favorites.subTab) {
-        1 -> data.favorites.created.folders
-        2 -> data.favorites.collected.folders
-        else -> emptyList()
-    },
-    subBangumi = data.favorites.bangumi[if (data.favorites.subTab == 4) 2 else 1]?.items.orEmpty(),
-    subReady = when (data.favorites.subTab) {
-        1 -> data.favorites.created.ready
-        2 -> data.favorites.collected.ready
-        3, 4 -> data.favorites.bangumi[if (data.favorites.subTab == 4) 2 else 1]?.ready == true
-        else -> data.favorites.ready
-    },
-    opened = data.favorites.opened,
+    sub = FavoriteSubContent(
+        tab = data.favorites.subTab,
+        folders = when (data.favorites.subTab) {
+            1 -> data.favorites.created.folders
+            2 -> data.favorites.collected.folders
+            else -> emptyList()
+        },
+        bangumi = data.favorites.bangumi[if (data.favorites.subTab == 4) 2 else 1]?.items.orEmpty(),
+        ready = when (data.favorites.subTab) {
+            1 -> data.favorites.created.ready
+            2 -> data.favorites.collected.ready
+            3, 4 -> data.favorites.bangumi[if (data.favorites.subTab == 4) 2 else 1]?.ready == true
+            else -> data.favorites.ready
+        },
+        opened = data.favorites.opened,
+    ),
 )
 
 @Composable

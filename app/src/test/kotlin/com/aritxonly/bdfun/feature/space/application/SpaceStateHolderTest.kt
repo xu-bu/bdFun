@@ -164,7 +164,7 @@ class SpaceStateHolderTest {
         override suspend fun seasons(mid: Long): Outcome<List<SpaceSeason>> { visit("seasons"); return Outcome.Success(emptyList()) }
         override suspend fun dynamics(mid: Long, offset: String): Outcome<FeedPage> { visit("dynamics"); return dynamicResult }
         override suspend fun relation(mid: Long): Outcome<Int?> { visit("relation"); return Outcome.Success(relation) }
-        override suspend fun videos(mid: Long, page: Int): Outcome<List<VideoItem>> {
+        override suspend fun videos(mid: Long, page: Int, order: Int): Outcome<List<VideoItem>> {
             visit("videos:$page"); videosGate?.await()
             return Outcome.Success(videos)
         }

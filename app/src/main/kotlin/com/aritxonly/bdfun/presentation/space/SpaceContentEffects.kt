@@ -58,10 +58,10 @@ internal fun SpaceContentEffects(
     }
 
     // 切到对应 tab 时补拉数据。
-    LaunchedEffect(controller, ui.selectedTab, ui.submissionMode) {
+    LaunchedEffect(controller, ui.selectedTab, ui.submissionMode, snapshot.videoOrder) {
         val current = controller.state.value
         when {
-            ui.selectedTab == 2 && ui.submissionMode == 0 && current.videos.items.isEmpty() -> actions.loadVideos(1)
+            ui.selectedTab == 2 && ui.submissionMode == 0 && current.videos.items.isEmpty() && !current.videos.loading -> actions.loadVideos(1)
             ui.selectedTab == 2 && ui.submissionMode == 1 && current.articles.items.isEmpty() -> actions.loadArticles(1)
             ui.selectedTab == 3 && current.shop.items.isEmpty() -> actions.loadShop()
         }

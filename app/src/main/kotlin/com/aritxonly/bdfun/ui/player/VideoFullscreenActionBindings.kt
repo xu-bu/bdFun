@@ -27,6 +27,7 @@ internal class VideoFullscreenActionBindings(
     private val actions: VideoPlayerActions,
     private val ui: VideoPlayerUiStateHolder,
     private val VideoPageBus: VideoPagePresentationState,
+    private val castSession: com.aritxonly.bdfun.presentation.cast.CastSessionController,
 ) {
     private val settings get() = VideoPageBus.settings
     private val activity = context as? Activity
@@ -170,7 +171,7 @@ internal class VideoFullscreenActionBindings(
 
     private val onCast: () -> Unit = {
         touch()
-        val session = com.aritxonly.bdfun.AppGraph.castSession
+        val session = castSession
         if (session.state.value.status == com.aritxonly.bdfun.presentation.cast.CastStatus.Playing) {
             // 投屏中再点一次即停止（选完设备就回了视频页，遥控页不再是唯一退出入口）。
             session.disconnect()

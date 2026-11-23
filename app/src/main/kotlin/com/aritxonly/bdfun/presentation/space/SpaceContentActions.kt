@@ -14,6 +14,8 @@ internal class SpaceContentActions(runtime: SpaceScreenRuntime, private val cont
     private val pagerState = content.pagerState
     private val followBusy get() = controller.state.value.profile.followBusy
     fun loadVideos(page: Int) { scope.launch { controller.loadVideos(page) } }
+    /** 切换投稿排序；列表重置后由 SpaceContentEffects 依赖 videoOrder 重新拉第一页。 */
+    fun setVideoOrder(order: Int) { controller.setVideoOrder(order) }
     fun loadArticles(page: Int) { scope.launch { controller.loadArticles(page) } }
     fun loadShop() { scope.launch { controller.loadShop() } }
     fun loadMoreFeeds() { scope.launch { controller.loadMoreFeeds() } }

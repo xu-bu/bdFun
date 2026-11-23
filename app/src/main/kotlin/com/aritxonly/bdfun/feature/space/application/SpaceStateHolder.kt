@@ -78,7 +78,7 @@ internal class SpaceStateHolder(
                 val seasons = async { requestCurrent { repository.seasons(mid) } }
                 val dynamics = async { requestCurrent { repository.dynamics(mid, "") } }
                 val relation = async { if (!isSelf && loggedIn) requestCurrent { repository.relation(mid) } else null }
-                val videos = async { requestCurrent { repository.videos(mid, 1) } }
+                val videos = async { requestCurrent { repository.videos(mid, 1, mutable.value.videoOrder) } }
                 val fetched = profile.awaitCurrent()
                 mutable.update { current -> current.copy(profile = when (fetched) {
                     is Outcome.Success -> current.profile.copy(space = fetched.value, settled = true)
@@ -110,7 +110,16 @@ internal class SpaceStateHolder(
     }
 
     suspend fun loadVideos(page: Int) = loadContent(page, { it.videos }, { state, content -> state.copy(videos = content) },
-        { repository.videos(mid, page) }, { it.bvid })
+        { repository.videos(mid, page, mutable.value.videoOrder) }, { it.bvid })
+
+    /** 切换投稿排序：重置列表并重新拉第一页（含 revision 守卫避免旧响应污染）。 */
+    fun setVideoOrder(order: Int) {
+        if (!active || order !in 0..2 || order == mutable.value.videoOrder) return
+        mutable.update { it.copy(
+            videoOrder = order,
+            videos = SpaceContentState(revision = it.videos.revision + 1),
+        ) }
+    }
     suspend fun loadArticles(page: Int) = loadContent(page, { it.articles }, { state, content -> state.copy(articles = content) },
         { repository.articles(mid, page) }, { it.id })
     suspend fun loadBangumi(page: Int) = loadContent(page, { it.bangumi }, { state, content -> state.copy(bangumi = content) },

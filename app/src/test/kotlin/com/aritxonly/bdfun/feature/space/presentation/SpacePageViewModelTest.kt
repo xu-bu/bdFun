@@ -23,7 +23,7 @@ class SpacePageViewModelTest {
         override suspend fun seasons(mid: Long): Outcome<List<SpaceSeason>> = error("unused")
         override suspend fun dynamics(mid: Long, offset: String): Outcome<FeedPage> = error("unused")
         override suspend fun relation(mid: Long): Outcome<Int?> = error("unused")
-        override suspend fun videos(mid: Long, page: Int): Outcome<List<VideoItem>> = error("unused")
+        override suspend fun videos(mid: Long, page: Int, order: Int): Outcome<List<VideoItem>> = error("unused")
         override suspend fun articles(mid: Long, page: Int): Outcome<List<SpaceArticle>> = error("unused")
         override suspend fun bangumi(mid: Long, page: Int): Outcome<List<SpaceBangumi>> = error("unused")
         override suspend fun shop(mid: Long): Outcome<List<SpaceShopItem>> = error("unused")

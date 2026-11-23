@@ -16,11 +16,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -85,6 +87,8 @@ internal fun SearchResultRow(
     modifier: Modifier = Modifier,
 ) {
     val colors = MiuixTheme.colorScheme
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val coverWidth = 150.dp
     val coverHeight = coverWidth * 9f / 16f
     Row(
@@ -94,7 +98,7 @@ internal fun SearchResultRow(
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        SearchVideoCover(video, coverWidth, coverHeight)
+        SearchVideoCover(video, coverWidth, coverHeight) { enqueueVideoCache(context, scope, video) }
         Spacer(Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f).height(coverHeight)) {
             Text(
@@ -144,7 +148,10 @@ internal fun SearchResultRow(
 }
 
 @Composable
-private fun SearchVideoCover(video: VideoItem, coverWidth: androidx.compose.ui.unit.Dp, coverHeight: androidx.compose.ui.unit.Dp) {
+private fun SearchVideoCover(
+    video: VideoItem, coverWidth: androidx.compose.ui.unit.Dp, coverHeight: androidx.compose.ui.unit.Dp,
+    onCache: () -> Unit,
+) {
     val colors = MiuixTheme.colorScheme
     Box(
         modifier = Modifier
@@ -170,5 +177,6 @@ private fun SearchVideoCover(video: VideoItem, coverWidth: androidx.compose.ui.u
                     .padding(end = 5.dp, bottom = 4.dp),
             )
         }
+        VideoCacheButton(onCache)
     }
 }

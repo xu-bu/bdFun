@@ -17,14 +17,25 @@ internal class LibraryDependencies(
     val entrance: LibraryEntranceRegistry,
     val playbackQueue: com.aritxonly.bdfun.core.application.PlaybackQueueStateHolder,
 )
+/** 收藏二级 tab 的展示数据，单独成组以控制 LibraryModeContent 主构造参数数量（上限 12）。 */
+internal data class FavoriteSubContent(
+    val tab: Int = 0, val folders: List<FavoriteFolder> = emptyList(),
+    val bangumi: List<BangumiCard> = emptyList(), val ready: Boolean = false,
+    val opened: OpenedFolderState? = null,
+)
 internal data class LibraryModeContent(
     val folders: List<FavoriteFolder>, val foldersReady: Boolean, val folderIndex: Int,
     val folderVideos: List<VideoItem>, val historyEntries: List<HistoryItem>, val watchLaterEntries: List<HistoryItem>,
     val loading: Boolean, val error: String?, val batchMode: Boolean, val selected: Set<String>, val canLoadMore: Boolean,
-    val subTab: Int = 0, val subFolders: List<FavoriteFolder> = emptyList(),
-    val subBangumi: List<BangumiCard> = emptyList(), val subReady: Boolean = false,
-    val opened: OpenedFolderState? = null,
-)
+    val sub: FavoriteSubContent = FavoriteSubContent(),
+) {
+    // 读取兼容属性，保持 content.subTab 等既有写法不变。
+    val subTab get() = sub.tab
+    val subFolders get() = sub.folders
+    val subBangumi get() = sub.bangumi
+    val subReady get() = sub.ready
+    val opened get() = sub.opened
+}
 internal data class LibraryModeLayout(
     val mode: Int, val title: String, val showModeTabs: Boolean, val isActive: Boolean,
     val modeProgress: State<Float>, val scrollTopTick: Int, val entrance: LibraryEntranceRegistry,

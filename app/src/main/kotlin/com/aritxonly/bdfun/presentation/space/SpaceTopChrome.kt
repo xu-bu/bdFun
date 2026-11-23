@@ -37,7 +37,7 @@ internal class SpaceChromeState {
     var bannerIsDark by mutableStateOf(true)
     var tabY by mutableFloatStateOf(Float.POSITIVE_INFINITY)
     var visible by mutableStateOf(false)
-    var selected by mutableIntStateOf(0)
+    var selected by mutableIntStateOf(2)
     var position: androidx.compose.runtime.State<Float>? by mutableStateOf(null)
     var onSelect: (Int) -> Unit = {}
 }

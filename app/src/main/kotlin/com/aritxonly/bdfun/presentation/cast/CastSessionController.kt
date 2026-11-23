@@ -1,11 +1,11 @@
 package com.aritxonly.bdfun.presentation.cast
 
+import com.aritxonly.bdfun.core.application.CastClient
 import com.aritxonly.bdfun.core.application.PlaybackController
 import com.aritxonly.bdfun.core.common.AppError
 import com.aritxonly.bdfun.core.common.Outcome
 import com.aritxonly.bdfun.core.domain.VideoPlaybackRepository
 import com.aritxonly.bdfun.core.domain.VideoRepository
-import com.aritxonly.bdfun.infra.cast.NvaClient
 import com.aritxonly.bdfun.core.domain.cast.NvaFrame
 import com.aritxonly.bdfun.core.domain.cast.NvaQualityOption
 import com.aritxonly.bdfun.core.domain.cast.nvaDanmakuSwitchPayload
@@ -64,13 +64,13 @@ internal class CastSessionController(
     private val videoRepository: VideoRepository,
     private val videoPlaybackRepository: VideoPlaybackRepository,
     private val accessKey: () -> String,
-    private val clientFactory: () -> NvaClient,
+    private val clientFactory: () -> CastClient,
     private val scope: CoroutineScope,
 ) {
     private val mutable = MutableStateFlow(CastSessionState())
     val state: StateFlow<CastSessionState> = mutable.asStateFlow()
 
-    private var client: NvaClient? = null
+    private var client: CastClient? = null
     private var framesJob: Job? = null
     private var disconnectJob: Job? = null
     /** 已推送弹幕的游标：TV 进度到哪就推到哪，避免一次性灌满电视。 */
@@ -184,7 +184,7 @@ internal class CastSessionController(
     }
 
     /** 监听 TV 推来的帧：进度、播放状态、断线。 */
-    private fun observeFrames(nva: NvaClient) {
+    private fun observeFrames(nva: CastClient) {
         framesJob?.cancel()
         framesJob = scope.launch {
             launch {

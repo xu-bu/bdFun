@@ -1,6 +1,7 @@
 package com.aritxonly.bdfun.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -13,8 +14,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 internal fun HomeFeedCard(video: VideoItem, largeCards: Boolean, onOpen: () -> Unit, onLongClick: () -> Unit) {
     val density = LocalDensity.current
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val colors = MiuixTheme.colorScheme
     val oneTake = rememberOneTakeAnchor()
+    val onCache: (VideoItem) -> Unit = { enqueueVideoCache(context, scope, it) }
     val radiusPx = with(density) { (if (largeCards) 14.dp else 16.dp).toPx() }
     val bgArgb = colors.background.toArgb()
     val openCard = {
@@ -26,8 +29,10 @@ internal fun HomeFeedCard(video: VideoItem, largeCards: Boolean, onOpen: () -> U
         ) { onOpen() }
     }
     if (largeCards) {
-        VideoLargeCard(video = video, modifier = oneTake.modifier, onClick = openCard, onLongClick = onLongClick)
+        VideoLargeCard(video = video, modifier = oneTake.modifier, onClick = openCard,
+            ownerClickEnabled = false, onCacheVideo = onCache, onLongClick = onLongClick)
     } else {
-        VideoGridCard(video = video, modifier = oneTake.modifier, onClick = openCard, onLongClick = onLongClick)
+        VideoGridCard(video = video, modifier = oneTake.modifier, onClick = openCard,
+            ownerClickEnabled = false, onCacheVideo = onCache, onLongClick = onLongClick)
     }
 }

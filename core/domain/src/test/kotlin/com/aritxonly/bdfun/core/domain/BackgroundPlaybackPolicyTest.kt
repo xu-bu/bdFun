@@ -21,4 +21,12 @@ class BackgroundPlaybackPolicyTest {
         assertFalse(shouldKeepPlaybackAlive(false, true, true))
         assertFalse(shouldKeepPlaybackAlive(true, false, true))
     }
+
+    @Test fun pausedVideoDoesNotEnterPipOnExit() {
+        // 设置允许画中画，但用户主动暂停后退出不应进小窗。
+        assertFalse(shouldEnterPipOnExit(true, true, false))
+        assertTrue(shouldEnterPipOnExit(true, true, true))
+        assertFalse(shouldEnterPipOnExit(false, true, true))
+        assertFalse(shouldEnterPipOnExit(true, false, true))
+    }
 }

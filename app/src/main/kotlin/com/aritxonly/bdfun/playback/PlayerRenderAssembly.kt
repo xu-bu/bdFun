@@ -23,7 +23,8 @@ internal fun rememberPlayerRenderPorts(
         session.attachPhonePlayback(playback)
         onDispose { session.detachPhonePlayback(playback) }
     }
-    val fsActions = VideoFullscreenActionBindings(context, playback, presentation.fullscreenInfo, actions, ui, page).create()
+    val fsActions = VideoFullscreenActionBindings(context, playback, presentation.fullscreenInfo, actions, ui, page,
+        com.aritxonly.bdfun.AppGraph.castSession).create()
     return PlayerRenderPorts(
         page = page,
         gestures = PlayerGestureOptions({ settings.gestureBrightnessVolume }, { settings.boostDefaultSpeed },

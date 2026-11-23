@@ -14,7 +14,8 @@ internal class SpaceBannerStateHolder {
     var bitmap by mutableStateOf<android.graphics.Bitmap?>(null)
 }
 internal class SpaceSelectionStateHolder {
-    var selectedTab by mutableIntStateOf(0)
+    /** 默认进入投稿 tab（index 2）。 */
+    var selectedTab by mutableIntStateOf(2)
     var submissionMode by mutableIntStateOf(0)
     var selectedCollection by mutableStateOf<SpaceSeason?>(null)
 }
@@ -40,4 +41,5 @@ internal class SpaceScreenActions(
     val context: android.content.Context, val onSelectTab: (Int) -> Unit,
     val onLoadCollection: (SpaceSeason) -> Unit, val onLoadArticles: (Int) -> Unit,
     val onFollow: () -> Unit, val onPageDrag: (Float) -> Unit,
+    val onSetVideoOrder: (Int) -> Unit = {},
 )

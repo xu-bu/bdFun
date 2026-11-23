@@ -13,7 +13,15 @@ internal fun androidx.compose.foundation.lazy.LazyListScope.spaceSubmissionChips
     val seasons = content.snapshot.seasons
     val articles = content.snapshot.articles.items
     val ui = content.ui
+    val order = content.snapshot.videoOrder
     val tabEnterModifier = Modifier
+    item(key = "submission-sort") {
+        // 投稿排序：点击在 从新到旧 → 播放最多 → 从旧到新 之间循环。
+        val label = when (order) { 1 -> "播放最多"; 2 -> "从旧到新"; else -> "从新到旧" }
+        SubmissionChip(text = "排序：$label", selected = false, onClick = {
+            actions.onSetVideoOrder((order + 1) % 3)
+        })
+    }
     item(key = "submission-chips") {
         LazyRow(
             modifier = tabEnterModifier,

@@ -46,8 +46,8 @@ internal class AppContainer(
         com.aritxonly.bdfun.infra.cast.AndroidCastDeviceRepository(requireNotNull(context))
     }
     /** 每次投屏会话创建一个 NVA 长连接客户端；会话结束由 CastSessionController 关闭。 */
-    fun createNvaClient(): com.aritxonly.bdfun.infra.cast.NvaClient =
-        com.aritxonly.bdfun.infra.cast.NvaClient()
+    fun createNvaClient(): com.aritxonly.bdfun.core.application.CastClient =
+        com.aritxonly.bdfun.cast.NvaCastClient(com.aritxonly.bdfun.infra.cast.NvaClient())
     /** NVA 的 Play 需要 access_key 才能让电视取到高清流与弹幕（TV 端另需登录）。 */
     val castAccessKey: () -> String = { api.cookieJar.value("access_key") }
     /**
@@ -114,36 +114,7 @@ internal class AppContainer(
         api::danmaku,
         { detail -> api.cloudResumePositionMs(detail.aid, detail.cid, detail.duration) },
     )
-    // 缓存失败项重试：B 站直链有时效，必须现取 videoDetail + playInfo 才能重新下载。
-    init {
-        videoCache?.setRetryResolver { entry ->
-            val detail = when (val r = videoRepository.videoDetail(entry.bvid)) {
-                is com.aritxonly.bdfun.core.common.Outcome.Success -> r.value
-                is com.aritxonly.bdfun.core.common.Outcome.Failure ->
-                    return@setRetryResolver com.aritxonly.bdfun.core.common.Outcome.Failure(r.error)
-            }
-            val play = when (val r = videoPlaybackRepository.playInfo(
-                VideoStreamRequest(detail, entry.qualityId, entry.cid, entry.durationSec,
-                    settings.codecPreference, settings.cdnService))) {
-                is com.aritxonly.bdfun.core.common.Outcome.Success -> r.value
-                is com.aritxonly.bdfun.core.common.Outcome.Failure ->
-                    return@setRetryResolver com.aritxonly.bdfun.core.common.Outcome.Failure(r.error)
-            }
-            val videoUrl = play.qualities.firstOrNull { it.id == entry.qualityId }?.videoUrl
-                ?: play.fallbackUrl
-            val audioUrl = play.audioUrl
-            if (videoUrl.isNullOrBlank() || audioUrl.isNullOrBlank()) {
-                com.aritxonly.bdfun.core.common.Outcome.Failure(
-                    com.aritxonly.bdfun.core.common.AppError.Parsing("该清晰度暂无可用下载地址"))
-            } else {
-                com.aritxonly.bdfun.core.common.Outcome.Success(
-                    com.aritxonly.bdfun.core.application.CacheRetryUrls(videoUrl, audioUrl))
-            }
-        }
-    }
-    private val bufferHistory by lazy {
-        com.aritxonly.bdfun.infra.storage.AndroidBufferHistoryStore(requireNotNull(context))
-    }
+    private val bufferHistory by lazy { com.aritxonly.bdfun.infra.storage.AndroidBufferHistoryStore(requireNotNull(context)) }
     fun createPlaybackController(context: Context, decoderMode: Int): com.aritxonly.bdfun.feature.video.presentation.VideoPlaybackPlatform =
         com.aritxonly.bdfun.playback.AndroidVideoPlaybackPlatform(
             com.aritxonly.bdfun.infra.playback.Media3PlaybackController(context.applicationContext, decoderMode,
@@ -263,9 +234,8 @@ internal class AppContainer(
                     ?: result.value.episodes.firstOrNull { it.bvid.isNotBlank() }
             is com.aritxonly.bdfun.core.common.Outcome.Failure -> null
         }
-    private val dynamicRepository by lazy {
-        BiliFeedPageRepository({ type, offset, mid -> api.dynamicPage(type, offset, mid) }, api::dynamicPortal, api::dynamicUpList, api::likeFeed)
-    }
+    private val dynamicRepository by lazy { BiliFeedPageRepository(
+        { type, offset, mid -> api.dynamicPage(type, offset, mid) }, api::dynamicPortal, api::dynamicUpList, api::likeFeed) }
     private data class FeedSlot(val job: Job, val view: FeedState)
     private val dynamicSlot = SessionResourceSlot({ sessionController.identity }, {
         val job = SupervisorJob(presentationScope.coroutineContext[Job])
@@ -392,6 +362,7 @@ internal class AppContainer(
     val sentHistory: SentHistoryStore? = context?.let { SentHistoryStore(it.applicationContext) }
 
     init {
+        configureCacheRetry() // 缓存失败项重试解析器；直链有时效，重试时现取详情与直链。
         com.aritxonly.bdfun.core.application.observeRecommendationPlayback(
             recommendationOptimizer, playbackSession, presentationScope, android.os.SystemClock::elapsedRealtime)
         presentationScope.launch {

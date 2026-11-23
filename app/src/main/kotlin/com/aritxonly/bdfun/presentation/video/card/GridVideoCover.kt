@@ -18,7 +18,10 @@ import com.aritxonly.bdfun.core.model.video.VideoItem
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun GridVideoCover(video: VideoItem, progress: Float, selectionEnabled: Boolean, selected: Boolean, reserveMeta: Boolean) {
+internal fun GridVideoCover(
+    video: VideoItem, progress: Float, selectionEnabled: Boolean, selected: Boolean, reserveMeta: Boolean,
+    onCacheVideo: ((VideoItem) -> Unit)? = null,
+) {
     val colors = MiuixTheme.colorScheme
     Box(
         modifier = Modifier
@@ -57,6 +60,7 @@ internal fun GridVideoCover(video: VideoItem, progress: Float, selectionEnabled:
         }
 
         GridCoverSelection(selectionEnabled, selected)
+        if (onCacheVideo != null && !selectionEnabled) VideoCacheButton { onCacheVideo(video) }
     }
 
 }

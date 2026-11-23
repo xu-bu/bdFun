@@ -12,7 +12,8 @@ interface SpaceRepository {
     suspend fun seasons(mid: Long): Outcome<List<SpaceSeason>>
     suspend fun dynamics(mid: Long, offset: String): Outcome<FeedPage>
     suspend fun relation(mid: Long): Outcome<Int?>
-    suspend fun videos(mid: Long, page: Int): Outcome<List<VideoItem>>
+    /** 投稿列表。order：0 从新到旧 / 1 播放最多 / 2 从旧到新；默认 0 兼容既有调用。 */
+    suspend fun videos(mid: Long, page: Int, order: Int = 0): Outcome<List<VideoItem>>
     suspend fun articles(mid: Long, page: Int): Outcome<List<SpaceArticle>>
     suspend fun bangumi(mid: Long, page: Int): Outcome<List<SpaceBangumi>>
     suspend fun shop(mid: Long): Outcome<List<SpaceShopItem>>

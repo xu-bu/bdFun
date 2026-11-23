@@ -19,6 +19,8 @@ internal data class SpaceProfileState(
 )
 internal data class SpaceUiState(
     val profile: SpaceProfileState = SpaceProfileState(), val seasons: List<SpaceSeason> = emptyList(),
+    /** 投稿排序：0 从新到旧 / 1 播放最多 / 2 从旧到新。 */
+    val videoOrder: Int = 0,
     val videos: SpaceContentState<VideoItem> = SpaceContentState(),
     val articles: SpaceContentState<SpaceArticle> = SpaceContentState(),
     val bangumi: SpaceContentState<SpaceBangumi> = SpaceContentState(),

@@ -28,7 +28,7 @@ import com.kyant.shapes.Capsule
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun GridVideoContent(video: VideoItem, showOwner: Boolean) {
+internal fun GridVideoContent(video: VideoItem, showOwner: Boolean, ownerClickEnabled: Boolean = true) {
     val colors = MiuixTheme.colorScheme
     val context = LocalContext.current
 
@@ -53,15 +53,12 @@ internal fun GridVideoContent(video: VideoItem, showOwner: Boolean) {
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // UP 名称可点：进 UP 空间页（点击被这里消费，不会触发整卡进视频）
+                // UP 名称默认可点进空间页；首页推荐下禁用跳转，但保留空点击消费事件，避免穿透到整卡进视频。
                 Row(
                     modifier = Modifier
                         .clip(Capsule())
                         .clickable(interactionSource = null, indication = null) {
-                            navigateToSpace(
-                                context,
-                                video.ownerMid,
-                            )
+                            if (ownerClickEnabled) navigateToSpace(context, video.ownerMid)
                         }
                         .padding(vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,

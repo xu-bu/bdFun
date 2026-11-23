@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,13 +55,14 @@ internal fun LibraryFavoriteSubTabs(selected: Int, onSelect: (Int) -> Unit) {
 internal fun LibraryFavoriteFolderCard(folder: FavoriteFolder, onClick: () -> Unit) {
     val colors = MiuixTheme.colorScheme
     val ugc = folder.type == 21
+    val locale = LocalLocale.current.platformLocale
     val meta = buildList {
         if (folder.count > 0) add("${folder.count} 个视频")
         if (ugc) add("合集")
         if (folder.privateFolder) add("私密")
         if (!ugc && folder.createdAt > 0L) {
             add(runCatching {
-                java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(folder.createdAt * 1000L))
+                java.text.SimpleDateFormat("yyyy-MM-dd", locale).format(Date(folder.createdAt * 1000L))
             }.getOrDefault(""))
         }
     }.filter { it.isNotBlank() }.joinToString(" · ")

@@ -157,10 +157,11 @@ internal fun androidx.compose.foundation.lazy.grid.LazyGridScope.libraryGridHead
                 }
             }
 
-            if (mode == 0 && content.opened != null) {
+            val openedFolder = content.opened
+            if (mode == 0 && openedFolder != null) {
                 item(key = "folder-back", span = { GridItemSpan(maxLineSpan) }) {
                     Text(
-                        text = "← 返回 · ${content.opened.folder.title}",
+                        text = "← 返回 · ${openedFolder.folder.title}",
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable(interactionSource = null, indication = null, onClick = actions.onCloseFolder)

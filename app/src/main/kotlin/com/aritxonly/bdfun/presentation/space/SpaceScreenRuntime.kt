@@ -38,7 +38,8 @@ internal fun rememberSpaceScreenRuntime(
 
     val ui = remember { SpaceSelectionStateHolder() }
     // 每个内容分类保留独立列表；宽屏资料单独放在左栏。
-    val pagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { 4 })
+    // 默认落在投稿 tab（index 2），与 ui.selectedTab 默认值一致，避免同步 effect 把它冲回 0。
+    val pagerState = androidx.compose.foundation.pager.rememberPagerState(initialPage = 2, pageCount = { 4 })
     val pagePosition = remember(pagerState) {
         derivedStateOf { pagerState.currentPage + pagerState.currentPageOffsetFraction }
     }

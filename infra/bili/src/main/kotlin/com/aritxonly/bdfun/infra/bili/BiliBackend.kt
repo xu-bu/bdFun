@@ -131,7 +131,7 @@ open class BiliBackend(context: Context, debug: Boolean, log: (String, String) -
     suspend fun space(mid: Long) = api.space(mid)
     suspend fun spaceSeasonsSeries(mid: Long) = api.spaceSeasonsSeries(mid)
     suspend fun spaceCollectionArchives( mid: Long, collection: SpaceSeason, ) = api.spaceCollectionArchives(mid, collection)
-    suspend fun spaceVideos(mid: Long, page: Int) = api.spaceVideos(mid, page)
+    suspend fun spaceVideos(mid: Long, page: Int, order: Int = 0) = api.spaceVideos(mid, page, order)
     suspend fun spaceArticles(mid: Long, page: Int) = api.spaceArticles(mid, page)
     suspend fun spaceBangumi(mid: Long, page: Int) = api.spaceBangumi(mid, page)
     suspend fun spaceShop(mid: Long) = api.spaceShop(mid)
