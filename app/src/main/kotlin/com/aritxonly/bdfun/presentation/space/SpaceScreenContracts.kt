@@ -42,4 +42,7 @@ internal class SpaceScreenActions(
     val onLoadCollection: (SpaceSeason) -> Unit, val onLoadArticles: (Int) -> Unit,
     val onFollow: () -> Unit, val onPageDrag: (Float) -> Unit,
     val onSetVideoOrder: (Int) -> Unit = {},
-)
+    val onCacheVideo: (com.aritxonly.bdfun.core.model.video.VideoItem) -> Unit = {},
+) {
+    fun cacheVideo(video: com.aritxonly.bdfun.core.model.video.VideoItem) = onCacheVideo(video)
+}

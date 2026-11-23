@@ -31,7 +31,8 @@ internal fun BoxScope.MainMineChrome(shell: MainShellState, pageFloat: Float) {
     CompositionLocalProvider(LocalTopBarScrollProgress provides shell.chrome.mine.materialProgress) {
         ProgressiveTopBarMaterial(modifier = Modifier.align(Alignment.TopCenter).graphicsLayer {
             translationX = (2f - pageFloat) * size.width
-            alpha = (pageFloat - 1f).coerceIn(0f, 1f)
+            // 我的页滑向缓存页时淡出，避免顶栏越界盖到缓存列表上。
+            alpha = (pageFloat - 1f).coerceAtMost(3f - pageFloat).coerceIn(0f, 1f)
         }) {
             MineTopAppBar(showSettings = widthDp < 600f) { navigateToSettings(context) }
         }

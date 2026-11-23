@@ -25,7 +25,10 @@ import com.aritxonly.bdfun.data.VideoItem
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun VideoRelatedCover(item: VideoItem, coverWidth: androidx.compose.ui.unit.Dp, coverHeight: androidx.compose.ui.unit.Dp) {
+internal fun VideoRelatedCover(
+    item: VideoItem, coverWidth: androidx.compose.ui.unit.Dp, coverHeight: androidx.compose.ui.unit.Dp,
+    onCacheVideo: ((VideoItem) -> Unit)? = null,
+) {
     val colors = MiuixTheme.colorScheme
     Box(
         modifier = Modifier
@@ -40,6 +43,7 @@ internal fun VideoRelatedCover(item: VideoItem, coverWidth: androidx.compose.ui.
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize(),
         )
+        if (onCacheVideo != null) VideoCacheButton { onCacheVideo(item) }
         // 时长直接压在封面上，不加任何背景
         if (item.duration > 0) {
             Text(

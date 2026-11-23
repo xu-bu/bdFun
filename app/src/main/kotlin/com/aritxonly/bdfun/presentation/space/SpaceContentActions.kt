@@ -1,6 +1,8 @@
 package com.aritxonly.bdfun
 
 import com.aritxonly.bdfun.core.model.user.SpaceSeason
+import com.aritxonly.bdfun.core.model.video.VideoItem
+import com.aritxonly.bdfun.ui.enqueueVideoCache
 import com.aritxonly.bdfun.ui.showToast
 import kotlinx.coroutines.launch
 
@@ -16,6 +18,7 @@ internal class SpaceContentActions(runtime: SpaceScreenRuntime, private val cont
     fun loadVideos(page: Int) { scope.launch { controller.loadVideos(page) } }
     /** 切换投稿排序；列表重置后由 SpaceContentEffects 依赖 videoOrder 重新拉第一页。 */
     fun setVideoOrder(order: Int) { controller.setVideoOrder(order) }
+    fun cacheVideo(video: VideoItem) { enqueueVideoCache(context, scope, video) }
     fun loadArticles(page: Int) { scope.launch { controller.loadArticles(page) } }
     fun loadShop() { scope.launch { controller.loadShop() } }
     fun loadMoreFeeds() { scope.launch { controller.loadMoreFeeds() } }

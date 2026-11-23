@@ -31,6 +31,7 @@ internal fun androidx.compose.foundation.lazy.LazyListScope.spaceShopItems(
                 onClick = {
                     navigateToVideo(context, video)
                 },
+                onCacheVideo = actions::cacheVideo,
             )
         }
     }

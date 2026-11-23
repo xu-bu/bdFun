@@ -7,6 +7,7 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.ContactsCircle
 import top.yukonga.miuix.kmp.icon.extended.Home
 import top.yukonga.miuix.kmp.icon.extended.Album
+import top.yukonga.miuix.kmp.icon.extended.Download
 
 internal data class Destination(
     val key: String,
@@ -21,6 +22,7 @@ internal fun rememberMainDestinations(): List<Destination> {
             Destination("home", "首页", MiuixIcons.Home),
             Destination("dynamics", "动态", MiuixIcons.Album),
             Destination("mine", "我的", MiuixIcons.ContactsCircle),
+            Destination("cache", "缓存", MiuixIcons.Download),
         )
     }
 }

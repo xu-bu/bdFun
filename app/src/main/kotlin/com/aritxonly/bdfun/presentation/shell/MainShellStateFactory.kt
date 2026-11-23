@@ -27,7 +27,7 @@ import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 @Composable
 internal fun rememberMainShellState(background: Color): MainShellState {
     val destinations = rememberMainDestinations()
-    // 三个 tab 用 HorizontalPager：页面之间横向相连，手拖和切换都是同一套非线性动画
+    // 四个 tab 用 HorizontalPager：页面之间横向相连，手拖和切换都是同一套非线性动画
     val tabPagerState = rememberPagerState(pageCount = { destinations.size })
     val selected = tabPagerState.currentPage
     val homeChrome = rememberTeakPageScrollState()

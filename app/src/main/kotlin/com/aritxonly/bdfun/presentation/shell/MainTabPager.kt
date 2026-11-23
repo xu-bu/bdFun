@@ -10,7 +10,10 @@ import com.aritxonly.bdfun.navigateToLibrary
 import com.aritxonly.bdfun.navigateToHistory
 import com.aritxonly.bdfun.navigateToFeed
 import com.aritxonly.bdfun.navigateToCache
+import com.aritxonly.bdfun.navigateToVideoByBvid
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
@@ -26,6 +29,7 @@ import androidx.compose.ui.platform.LocalViewConfiguration
 import com.aritxonly.bdfun.ui.rememberStricterSwipeConfiguration
 import com.aritxonly.bdfun.core.model.user.UserProfile
 import com.aritxonly.bdfun.feature.settings.presentation.SettingsBindings
+import com.aritxonly.bdfun.ui.CacheScreen
 import com.aritxonly.bdfun.ui.FeedScreen
 import com.aritxonly.bdfun.ui.MineScreen
 import com.aritxonly.bdfun.ui.homeTopBarHeight
@@ -52,7 +56,7 @@ internal fun MainTabPager(
             state = pager,
             modifier = Modifier.fillMaxSize(),
             beyondViewportPageCount = 0,
-            // 主 tab（首页/动态/我的）只由底栏点击切换；左右滑动留给首页内部的
+            // 主 tab（首页/动态/我的/缓存）只由底栏点击切换；左右滑动留给首页内部的
             // 推荐/直播/番剧分段，避免一次横划同时牵动两套分页。
             userScrollEnabled = false,
             // 到头/到尾再滑不出现任何回弹动画
@@ -80,7 +84,9 @@ internal fun MainTabPager(
                     refreshTick = dynamicRefreshTick,
                 )
 
-                else -> MainMineTab(session, settings, mineList)
+                2 -> MainMineTab(session, settings, mineList)
+
+                else -> MainCacheTab(context)
             }
         }
     }
@@ -186,6 +192,18 @@ private fun HomeSectionContent(
             topBarHeight = topBarHeight,
         )
     }
+}
+
+/** 底栏第四个 tab：直接嵌缓存列表，不再经过独立 Activity。 */
+@Composable
+private fun MainCacheTab(context: android.content.Context) {
+    CacheScreen(
+        queue = AppGraph.videoCache,
+        onOpen = { navigateToVideo(context, it) },
+        onOpenDetail = { bvid -> navigateToVideoByBvid(context, bvid) },
+        // 悬浮底栏盖在列表上，给最后一项留出可滚动到的空间。
+        modifier = Modifier.padding(bottom = 96.dp),
+    )
 }
 
 @Composable

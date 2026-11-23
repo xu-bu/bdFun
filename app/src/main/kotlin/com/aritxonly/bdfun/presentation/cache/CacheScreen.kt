@@ -29,6 +29,7 @@ internal fun CacheScreen(
     queue: DownloadQueueStateHolder,
     onOpen: (com.aritxonly.bdfun.core.model.video.VideoItem) -> Unit,
     onOpenDetail: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val colors = MiuixTheme.colorScheme
     val context = LocalContext.current
@@ -37,7 +38,7 @@ internal fun CacheScreen(
     if (entries.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize()) {
             // 标题照常渲染，但空提示覆盖整屏居中，不受大标题占位影响。
-            TeakSettingsPage(title = "离线缓存", subtitle = null) {}
+            TeakSettingsPage(title = "离线缓存", subtitle = null, modifier = modifier) {}
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -65,6 +66,7 @@ internal fun CacheScreen(
     TeakSettingsPage(
         title = "离线缓存",
         subtitle = "共 ${entries.size} 个 · ${formatCacheSize(entries.sumOf { it.totalBytes })}",
+        modifier = modifier,
     ) {
         items(entries, key = { it.id }) { entry ->
             val oneTake = rememberOneTakeAnchor()

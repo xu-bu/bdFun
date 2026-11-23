@@ -28,7 +28,8 @@ internal fun androidx.compose.foundation.layout.BoxScope.MainShellNavigation(set
             .indexOfFirst { it.key == item.key }
             .coerceAtLeast(0)
         if (index == tabPagerState.currentPage) {
-            val chrome = when (index) {
+            // 缓存页没有独立的滚动状态，重复点它的 tab 时不做什么。
+            val chrome: com.aritxonly.teak.common.chrome.TeakPageScrollState? = when (index) {
                 0 -> when (ui.homeSection) {
                     1 -> shell.chrome.live
                     2 -> shell.chrome.popular
@@ -37,9 +38,10 @@ internal fun androidx.compose.foundation.layout.BoxScope.MainShellNavigation(set
                     else -> shell.chrome.home
                 }
                 1 -> shell.chrome.dynamic
-                else -> shell.chrome.mine
+                2 -> shell.chrome.mine
+                else -> null
             }
-            val scroll = chrome.scrollableState
+            val scroll = chrome?.scrollableState
             val refresh = index in 0..1 && com.aritxonly.bdfun.core.domain.TabClickPolicy.shouldRefresh(
                 settings.tabClickRefresh, scroll != null && !scroll.canScrollBackward,
             )

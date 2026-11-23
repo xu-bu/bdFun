@@ -22,6 +22,6 @@ internal fun SpaceScreen(
     SpacePagerSyncEffects(content, scroll, scrollActions)
     val actions = SpaceScreenActions(context, scrollActions::selectTab, contentActions::loadCollection,
         contentActions::loadArticles, contentActions::follow, scrollActions::applyPageDrag,
-        contentActions::setVideoOrder)
+        contentActions::setVideoOrder, contentActions::cacheVideo)
     SpaceScreenBody(content, scroll.layout, actions)
 }

@@ -19,6 +19,7 @@ internal fun RelatedRow(
     item: VideoItem,
     onClick: () -> Unit,
     metaLabel: String? = null,
+    onCacheVideo: ((VideoItem) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val oneTake = rememberOneTakeAnchor()
@@ -34,7 +35,7 @@ internal fun RelatedRow(
             .padding(horizontal = 16.dp, vertical = 6.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        VideoRelatedCover(item, coverWidth, coverHeight)
+        VideoRelatedCover(item, coverWidth, coverHeight, onCacheVideo)
         Spacer(Modifier.width(10.dp))
         // 右列高度锁成封面高度：标题第一行贴封面顶部，UP 行贴封面底部
         VideoRelatedMetadata(item, metaLabel, coverHeight, Modifier.weight(1f))
