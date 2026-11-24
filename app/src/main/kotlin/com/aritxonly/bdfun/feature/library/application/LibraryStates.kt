@@ -17,7 +17,13 @@ internal data class OpenedFolderState(
     val folder: FavoriteFolder, val videos: List<VideoItem> = emptyList(), val page: Int = 1,
     val hasMore: Boolean = false, val loadingMore: Boolean = false, val ready: Boolean = false,
     val revision: Int = 0,
-)
+    /** 已加载的最早一页；合集从看过的最远一集所在页打开时大于 1，向上滑动再补更早的页。 */
+    val firstPage: Int = 1,
+    /** 打开后要定位到的视频（合集看过的最远一集）；列表滚动到位后清空。 */
+    val jumpTo: String? = null,
+) {
+    val hasPrevious get() = firstPage > 1
+}
 
 /** 收藏页二级 tab 的独立状态；单独成组以控制 FavoriteUiState 主构造参数数量（审计上限 12）。 */
 internal data class FavoriteSubState(

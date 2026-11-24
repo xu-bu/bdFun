@@ -8,4 +8,6 @@ import com.aritxonly.bdfun.core.model.video.VideoItem
 class VideoDetailTailSlots(
     val cover: @Composable (String, Modifier) -> Unit,
     val relatedRow: @Composable (VideoItem, () -> Unit) -> Unit,
+    /** 合集单集封面底部的已看进度条（按 bvid），观看记录由 app 提供。 */
+    val watchProgress: @Composable androidx.compose.foundation.layout.BoxScope.(String) -> Unit = {},
 )

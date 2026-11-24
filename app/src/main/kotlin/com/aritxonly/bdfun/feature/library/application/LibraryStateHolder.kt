@@ -208,58 +208,22 @@ internal class LibraryStateHolder(
         } finally { loading(0, false) }
     }
 
-    fun openFolder(folder: FavoriteFolder) {
-        if (!isActive) return
-        mutable.update { it.copy(favorites = it.favorites.copy(
-            sub = it.favorites.sub.copy(opened = OpenedFolderState(folder), revision = it.favorites.subRevision + 1))) }
-    }
-    fun closeOpened() = mutable.update { if (!isActive) it else it.copy(favorites = it.favorites.copy(
-        sub = it.favorites.sub.copy(opened = null))) }
-
-    private fun openedRevisionMatches(revision: Int) = mutable.value.favorites.opened?.revision == revision
-    private fun updateOpened(revision: Int, transform: (OpenedFolderState) -> OpenedFolderState) = mutable.update {
-        val opened = it.favorites.opened
-        if (!isActive || opened == null || opened.revision != revision) it else
-            it.copy(favorites = it.favorites.copy(sub = it.favorites.sub.copy(opened = transform(opened))))
-    }
-
-    suspend fun loadOpened() {
-        val opened = mutable.value.favorites.opened ?: return
-        if (opened.ready || mutable.value.loading[0] == true || mutable.value.busy) return
-        loading(0, true); error(0, null)
-        val revision = opened.revision + 1
-        updateOpened(opened.revision) { it.copy(revision = revision) }
-        try {
-            when (val result = request {
-                if (opened.folder.type == 21) repository.seasonVideos(opened.folder.id, 1)
-                else repository.videos(opened.folder.id, 1)
-            }) {
-                is Outcome.Success -> updateOpened(revision) { it.copy(
-                    videos = result.value.first, page = 1, hasMore = result.value.second, ready = true) }
-                is Outcome.Failure -> {
-                    if (openedRevisionMatches(revision)) error(0, result.error.messageOr("收藏夹加载失败"))
-                    updateOpened(revision) { it.copy(ready = true) }
-                }
-            }
-        } finally { if (openedRevisionMatches(revision)) loading(0, false) }
-    }
-
-    suspend fun loadMoreOpened() {
-        val opened = mutable.value.favorites.opened ?: return
-        if (!isActive || !opened.ready || !opened.hasMore || mutable.value.loading[0] == true || mutable.value.busy) return
-        loading(0, true)
-        try {
-            when (val result = request {
-                if (opened.folder.type == 21) repository.seasonVideos(opened.folder.id, opened.page + 1)
-                else repository.videos(opened.folder.id, opened.page + 1)
-            }) {
-                is Outcome.Success -> updateOpened(opened.revision) { it.copy(
-                    videos = (it.videos + result.value.first).distinctBy { video -> video.bvid },
-                    page = opened.page + 1, hasMore = result.value.second) }
-                is Outcome.Failure -> error(0, result.error.messageOr("加载更多失败"))
-            }
-        } finally { loading(0, false) }
-    }
+    // 打开的单个收藏夹 / 合集：分页细节见 OpenedFolderPaging（可从中间页开始并向上补页）。
+    private val openedPaging = OpenedFolderPaging(repository, object : OpenedFolderPaging.Host {
+        override val isActive get() = this@LibraryStateHolder.isActive
+        override val current get() = mutable.value
+        override fun update(transform: (LibraryUiState) -> LibraryUiState) = mutable.update(transform)
+        override suspend fun <T> request(action: suspend () -> Outcome<T>) = this@LibraryStateHolder.request(action)
+        override fun loading(tab: Int, value: Boolean) = this@LibraryStateHolder.loading(tab, value)
+        override fun error(tab: Int, value: String?) = this@LibraryStateHolder.error(tab, value)
+    })
+    fun openFolder(folder: FavoriteFolder, startPage: Int = 1, jumpTo: String? = null) =
+        openedPaging.open(folder, startPage, jumpTo)
+    fun closeOpened() = openedPaging.close()
+    fun consumeOpenedJump() = openedPaging.consumeJump()
+    suspend fun loadOpened() = openedPaging.load()
+    suspend fun loadMoreOpened() = openedPaging.loadMore()
+    suspend fun loadPreviousOpened() = openedPaging.loadPrevious()
 
     suspend fun loadHistory() {
         if (!isActive || mutable.value.loading[1] == true || mutable.value.busy) return

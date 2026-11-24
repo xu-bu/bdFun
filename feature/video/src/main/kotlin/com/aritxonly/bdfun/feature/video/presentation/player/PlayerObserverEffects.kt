@@ -66,12 +66,13 @@ fun BindPlayerObserver(
         }
         playback.addListener(listener)
         onDispose {
-            if (exit.resumePlayback()) {
-                runCatching {
-                    val tick = playback.refresh()
-                    ui.preparedMediaKey.value?.split(":")?.let { key ->
-                        progress.save(key[0], key.getOrNull(1)?.toLongOrNull() ?: 0L, tick.positionMs, tick.durationMs)
-                    }
+            runCatching {
+                val tick = playback.refresh()
+                ui.preparedMediaKey.value?.split(":")?.let { key ->
+                    val cid = key.getOrNull(1)?.toLongOrNull() ?: 0L
+                    // 退出时补记一次观看记录（不受续播开关影响），续播进度仍按原开关保存。
+                    progress.recordWatch(key[0], cid, tick.positionMs, tick.durationMs)
+                    if (exit.resumePlayback()) progress.save(key[0], cid, tick.positionMs, tick.durationMs)
                 }
             }
             playback.removeListener(listener)

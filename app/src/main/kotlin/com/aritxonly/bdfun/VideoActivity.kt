@@ -308,7 +308,8 @@ class VideoActivity : ComponentActivity() {
             com.aritxonly.bdfun.ui.PhotoViewerRoot(animationsEnabled = settings.animationsEnabled) {
             androidx.compose.runtime.CompositionLocalProvider(LocalVideoPageState provides pageState,
                 com.aritxonly.bdfun.feature.settings.presentation.LocalSettingsBindings provides settings,
-                com.aritxonly.bdfun.ui.LocalRichTextDependencies provides AppGraph.richTextDependencies) {
+                com.aritxonly.bdfun.ui.LocalRichTextDependencies provides AppGraph.richTextDependencies,
+                com.aritxonly.bdfun.ui.LocalWatchRecords provides AppGraph.watchRecords) {
             com.aritxonly.bdfun.ui.VideoActivityContent(isLoggedIn, settings, route, requestedBvid, requestedAid, pipMode,
                 com.aritxonly.bdfun.ui.VideoActivityHostActions(
                     onBack = ::exitVideoPage,

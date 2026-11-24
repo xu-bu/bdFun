@@ -47,6 +47,7 @@ internal fun LibraryModePage(content: LibraryModeContent, layout: LibraryModeLay
     RegisterScrollTop(gridState, "library")
     if (layout.isActive) TrackTeakPageScroll(gridState)
     LibraryModeEffects(gridState, layout, actions)
+    LibraryOpenedJumpEffect(gridState, content, layout, actions)
     Box(modifier = Modifier.fillMaxSize()) {
         LibraryGrid(content, layout, actions, gridState)
     }
@@ -172,6 +173,18 @@ internal fun androidx.compose.foundation.lazy.grid.LazyGridScope.libraryGridHead
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
+                // 合集从中间页打开：滑到这里再补更早的一页（定位完成前不补，见 OpenedFolderPaging）。
+                if (openedFolder.hasPrevious && openedFolder.jumpTo == null) {
+                    item(key = "load-previous", span = { GridItemSpan(maxLineSpan) }) {
+                        LaunchedEffect(actions.owner, openedFolder.firstPage) { actions.onLoadPrevious() }
+                        Text(
+                            text = "加载更早的视频…",
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                            color = MiuixTheme.colorScheme.onBackgroundVariant,
+                            fontSize = 13.sp,
+                        )
+                    }
+                }
             } else if (mode == 0) {
                 item(key = "favorite-sub-tabs", span = { GridItemSpan(maxLineSpan) }) {
                     LibraryFavoriteSubTabs(content.subTab, actions.onSelectSubTab)
@@ -217,4 +230,24 @@ internal fun androidx.compose.foundation.lazy.grid.LazyGridScope.libraryGridFoot
                     )
                 }
             }
+}
+
+/** 打开的收藏夹里，视频之前的整行条目数：标题、模式 tab（可选）、返回行。定位期间不显示补页行。 */
+private fun libraryOpenedHeaderCount(layout: LibraryModeLayout) = 2 + if (layout.showModeTabs) 1 else 0
+
+/** 合集打开后滚到看过的最远一集；找到后清空目标，之后才允许向上补页。 */
+@Composable
+private fun LibraryOpenedJumpEffect(
+    gridState: androidx.compose.foundation.lazy.grid.LazyGridState, content: LibraryModeContent,
+    layout: LibraryModeLayout, actions: LibraryModeActions,
+) {
+    val target = content.opened?.jumpTo
+    val videos = content.folderVideos
+    LaunchedEffect(target, videos) {
+        if (target == null || layout.mode != 0) return@LaunchedEffect
+        val index = videos.indexOfFirst { it.bvid == target }
+        if (index < 0) return@LaunchedEffect
+        gridState.scrollToItem(libraryOpenedHeaderCount(layout) + index)
+        actions.onConsumeJump()
+    }
 }

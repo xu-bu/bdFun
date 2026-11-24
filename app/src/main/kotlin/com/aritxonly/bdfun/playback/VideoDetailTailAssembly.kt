@@ -13,5 +13,6 @@ internal fun rememberVideoDetailTailSlots(): VideoDetailTailSlots = remember {
                 contentScale = ContentScale.Crop, modifier = modifier)
         },
         relatedRow = { item, onClick -> RelatedRow(item = item, onClick = onClick) },
+        watchProgress = { bvid -> WatchProgressBar(bvid) },
     )
 }

@@ -36,12 +36,25 @@ import java.util.Locale
 /** 收藏页二级 tab：五个标签在窄屏可横滑，选中态与 PC 版一致（粉色文字 + 下划线）。 */
 @Composable
 internal fun LibraryFavoriteSubTabs(selected: Int, onSelect: (Int) -> Unit) {
+    // TeakPagerTabs 等宽排列（下划线位置按统一宽度计算），宽度要容纳最长的标签；
+    // 固定 88dp 放不下 7 个字的「我的收藏与订阅」，会折成两行。按实际字号测量，
+    // 系统字体放大时也不会折行。
+    val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val itemWidth = androidx.compose.runtime.remember(measurer, density) {
+        val style = androidx.compose.ui.text.TextStyle(
+            fontSize = com.aritxonly.teak.common.navigation.TeakPagerTabDefaults.LabelFontSize,
+            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+        )
+        val widest = FAVORITE_SUB_TABS.maxOf { measurer.measure(it, style, maxLines = 1).size.width }
+        maxOf(88.dp, with(density) { widest.toDp() } + 20.dp)
+    }
     Box(modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
         TeakPagerTabs(
             options = FAVORITE_SUB_TABS,
             selected = selected,
             onSelect = onSelect,
-            itemWidth = 88.dp,
+            itemWidth = itemWidth,
             backdrop = null,
             plain = true,
             transparentBackground = true,

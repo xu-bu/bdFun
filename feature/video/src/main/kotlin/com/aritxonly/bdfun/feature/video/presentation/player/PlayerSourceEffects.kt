@@ -49,10 +49,13 @@ fun BindPlayerSource(
                 "video=${describeMediaUrl(url)} audio=${describeMediaUrl(audioUrl)}",
         )
         val previousKey = ui.preparedMediaKey.value
-        if (resumePlayback() && previousKey != null && previousKey != mediaKey) {
+        if (previousKey != null && previousKey != mediaKey) {
+            // 切到下一集/分P前补记上一集：观看记录不受续播开关影响，续播进度仍按原开关保存。
             val previous = previousKey.split(":")
+            val cid = previous.getOrNull(1)?.toLongOrNull() ?: 0L
             val tick = playback.refresh()
-            progress.save(previous[0], previous.getOrNull(1)?.toLongOrNull() ?: 0L, tick.positionMs, tick.durationMs)
+            progress.recordWatch(previous[0], cid, tick.positionMs, tick.durationMs)
+            if (resumePlayback()) progress.save(previous[0], cid, tick.positionMs, tick.durationMs)
         }
         val localResume = if (resumePlayback() && previousKey != mediaKey && resumePositionMs <= 0L) {
             progress.resumeFor(bvid, presentation.fullscreenInfo.currentCid)

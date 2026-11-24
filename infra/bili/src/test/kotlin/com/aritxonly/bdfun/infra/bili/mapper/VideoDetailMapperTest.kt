@@ -30,6 +30,8 @@ class VideoDetailMapperTest {
         assertTrue(video.cover.endsWith("@1200w_675h_1c.webp"))
         // 投币页用它判断转载视频最多只能投 1 币，必须保留接口原值。
         assertEquals(3, video.copyright)
+        // ugc_season.id：收藏页「合集」用同一个 season_id 定位看过的最远一集。
+        assertEquals(9057050L, video.collectionSeasonId)
     }
 
     @Test fun secondRealVideoDoesNotInventCollection() {
@@ -40,6 +42,7 @@ class VideoDetailMapperTest {
         assertEquals("“灭建国是谁呀😄？？”", video.title)
         assertTrue(video.episodes.isEmpty())
         assertEquals("", video.seasonTitle)
+        assertEquals(0L, video.collectionSeasonId)
     }
 
     @Test fun thirdRealVideoRetainsLargeOwnerId() {

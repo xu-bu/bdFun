@@ -18,6 +18,12 @@ fun VideoDetailEntry(
     val (detail, selection, interaction, metadata) = collected
     // 只更新当前标识；真正退出时仍由 Activity 清理读取缓存。
     LaunchedEffect(selection.bvid) { ports.publishBvid(selection.bvid) }
+    // 合集单集顺序交给观看记录：看过的最远一集供收藏页「合集」打开时直接定位。
+    val loaded = detail.detail
+    LaunchedEffect(loaded?.collectionSeasonId, loaded?.episodes?.size) {
+        val season = loaded?.collectionSeasonId ?: 0L
+        if (season > 0L) ports.state.progress.locateCollection(season, loaded!!.episodes.map { it.bvid })
+    }
     val playing by holders.ui.playing
     val qualities = detail.playInfo?.qualities.orEmpty()
     val quality = if (selection.autoQuality) {

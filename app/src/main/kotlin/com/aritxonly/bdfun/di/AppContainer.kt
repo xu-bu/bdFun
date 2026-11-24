@@ -20,7 +20,6 @@ import com.aritxonly.bdfun.BuildConfig
 import com.aritxonly.bdfun.AppThemePalette
 import com.aritxonly.bdfun.data.*
 import com.aritxonly.teak.common.settings.TeakDebugLog
-
 /** 使用 applicationContext，避免进程级依赖持有 Activity。 */
 internal class AppContainer(
     val api: BiliApi,
@@ -102,7 +101,9 @@ internal class AppContainer(
     }
     val automaticVideoQuality = AutomaticVideoQualitySelector(
         com.aritxonly.bdfun.infra.playback.AndroidNetworkBandwidthSource(context))
-    val playbackProgress: PlaybackProgressRepository = com.aritxonly.bdfun.infra.storage.AndroidPlaybackProgressRepository(context)
+    val watchRecords = com.aritxonly.bdfun.core.application.WatchRecordStore(context?.let { com.aritxonly.bdfun.infra.storage.AndroidWatchRecordStorage(it) })
+    val playbackProgress: PlaybackProgressRepository = com.aritxonly.bdfun.core.application.WatchRecordingProgressRepository(
+        com.aritxonly.bdfun.infra.storage.AndroidPlaybackProgressRepository(context), watchRecords)
     val playbackTrackingRepository = com.aritxonly.bdfun.infra.bili.BiliPlaybackTrackingRepository(api)
     val videoEntryRepository: VideoEntryRepository = com.aritxonly.bdfun.infra.bili.BiliVideoEntryRepository(api::view, api::viewByAid)
     val videoRepository: VideoRepository = BiliVideoRepository(api::view, api::related)
@@ -225,7 +226,6 @@ internal class AppContainer(
         com.aritxonly.bdfun.feature.pgc.application.BangumiRankBoardStateHolder(
             com.aritxonly.bdfun.infra.bili.BiliPgcRankRepository(api),
             com.aritxonly.bdfun.core.model.pgc.BangumiRankTab(rankId, title, oid))
-
     /** 番剧播放走视频详情页：这里只负责把 season 解析成首集的 bvid。 */
     suspend fun bangumiFirstEpisode(seasonId: Long): com.aritxonly.bdfun.core.model.pgc.BangumiEpisode? =
         when (val result = com.aritxonly.bdfun.infra.bili.BiliPgcPlaybackRepository(api).season(seasonId)) {
@@ -325,7 +325,7 @@ internal class AppContainer(
             com.aritxonly.bdfun.feature.library.application.LibraryInteractionStateHolder(
                 settings.repository.general, settings.state.map { Unit }, scope,
             )
-        }, com.aritxonly.bdfun.feature.library.application.LibraryEntranceRegistry(), playbackQueue)
+        }, com.aritxonly.bdfun.feature.library.application.LibraryEntranceRegistry(), playbackQueue, watchRecords)
     }
     fun libraryStateHolder(): com.aritxonly.bdfun.feature.library.application.LibraryStateHolder {
         val identity = sessionController.identity

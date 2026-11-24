@@ -7,6 +7,10 @@ interface PlaybackProgressRepository {
         save(playbackProgressKey(bvid, cid), positionMs, durationMs)
     fun save(bvid: String, positionMs: Long, durationMs: Long)
     fun clear(bvid: String)
+    /** 观看记录（见 [WatchRecord]）：不受「继续播放」设置影响，播放器按续播的同一节奏上报；默认不记录。 */
+    fun recordWatch(bvid: String, cid: Long, positionMs: Long, durationMs: Long) {}
+    /** 当前视频所属合集的单集顺序（从 [firstIndex] 起），用于把观看记录换算成"看到第几集"。 */
+    fun locateCollection(seasonId: Long, bvids: List<String>, firstIndex: Int = 0) {}
 }
 
 enum class ProgressSaveDecision { Skip, Clear, Write }

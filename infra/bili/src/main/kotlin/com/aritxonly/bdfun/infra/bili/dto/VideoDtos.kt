@@ -20,6 +20,7 @@ internal data class VideoEpisodeDto(
 )
 internal data class VideoCollectionDto(
     val pages: List<VideoPageDto>, val episodes: List<VideoEpisodeDto>, val title: String,
+    val seasonId: Long = 0L,
 )
 internal data class VideoInteractionDto(val liked: Boolean, val coined: Boolean, val favorited: Boolean)
 internal data class VideoFeedDto(

@@ -8,6 +8,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import com.aritxonly.bdfun.feature.library.application.*
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @Composable
@@ -45,6 +47,16 @@ internal fun LibraryEffects(runtime: LibraryRuntime) {
             1 -> launch { runtime.data.loadHistory() }
             2 -> launch { runtime.loadWatchLater() }
             else -> { launch { runtime.data.loadFavorites() }; launch { runtime.data.loadHistory() }; launch { runtime.loadWatchLater() } }
+        }
+    }
+    // 订阅合集已加载的单集登记到观看记录：在这里看过的集，会推进该合集「看过的最远一集」。
+    val watchRecords = runtime.dependencies.watchRecords
+    LaunchedEffect(runtime.data, watchRecords) {
+        if (watchRecords == null) return@LaunchedEffect
+        runtime.data.state.map { it.favorites.opened }.distinctUntilChanged().collect { opened ->
+            if (opened == null || opened.folder.type != 21 || opened.videos.isEmpty()) return@collect
+            watchRecords.locate(opened.folder.id, opened.videos.map { it.bvid },
+                (opened.firstPage - 1) * com.aritxonly.bdfun.core.domain.FAVORITE_SEASON_PAGE_SIZE)
         }
     }
     LaunchedEffect(chrome.batchActionRequest) {

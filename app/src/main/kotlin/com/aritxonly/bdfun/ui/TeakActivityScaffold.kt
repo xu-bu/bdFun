@@ -152,6 +152,7 @@ fun TeakBareTheme(
         androidx.compose.runtime.CompositionLocalProvider(
             com.aritxonly.bdfun.feature.settings.presentation.LocalSettingsBindings provides settings,
             LocalRichTextDependencies provides com.aritxonly.bdfun.AppGraph.richTextDependencies,
+            LocalWatchRecords provides com.aritxonly.bdfun.AppGraph.watchRecords,
         ) { content(dark, materialColors) }
     }
 }

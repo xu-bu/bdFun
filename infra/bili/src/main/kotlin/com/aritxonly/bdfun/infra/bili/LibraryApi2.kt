@@ -162,7 +162,8 @@ internal suspend fun BiliApiContext.seasonVideos(seasonId: Long, page: Int): Pai
         val data = dataRequest(
             "/x/space/fav/season/list",
             mapOf("season_id" to seasonId.toString(), "mid" to mid.toString(),
-                "pn" to page.toString(), "ps" to "20", "platform" to "web"),
+                "pn" to page.toString(), "ps" to com.aritxonly.bdfun.core.domain.FAVORITE_SEASON_PAGE_SIZE.toString(),
+                "platform" to "web"),
         )
         mapSeasonVideos(data)
     }

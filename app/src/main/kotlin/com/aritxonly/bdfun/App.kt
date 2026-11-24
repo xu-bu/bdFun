@@ -26,7 +26,8 @@ fun BdFunApp(settings: SettingsStore) {
             hapticsEnabled = settings.vibrationEnabled,
         ) {
             CompositionLocalProvider(LocalTeakBackdrop provides shell.backdrops.main,
-                com.aritxonly.bdfun.ui.LocalRichTextDependencies provides AppGraph.richTextDependencies) {
+                com.aritxonly.bdfun.ui.LocalRichTextDependencies provides AppGraph.richTextDependencies,
+                com.aritxonly.bdfun.ui.LocalWatchRecords provides AppGraph.watchRecords) {
                 MainShellEffects(settings, shell)
                 MainScaffold(settings, shell, theme.dark, theme.materialColors.background)
             }

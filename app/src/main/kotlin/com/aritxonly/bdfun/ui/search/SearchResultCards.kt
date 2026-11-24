@@ -177,6 +177,7 @@ private fun SearchVideoCover(
                     .padding(end = 5.dp, bottom = 4.dp),
             )
         }
+        WatchProgressBar(video.bvid)
         VideoCacheButton(onCache)
     }
 }

@@ -61,6 +61,7 @@ internal fun mapVideoDetail(dto: VideoDetailDto, cleanHtml: (String) -> String):
             it.play, it.danmaku, it.publishedAt)
     },
         seasonTitle = dto.collection.title,
+        collectionSeasonId = dto.collection.seasonId,
         copyright = dto.copyright,
     ),
     interaction = VideoDetailInteraction(
@@ -82,7 +83,7 @@ private fun readCollection(data: JSONObject): VideoCollectionDto {
     val season = data.optJSONObject("ugc_season")
     val episodes = season?.optJSONArray("sections").objects()
         .flatMap { it.optJSONArray("episodes").objects() }.mapNotNull(::readEpisode)
-    return VideoCollectionDto(pages, episodes, season?.s("title").orEmpty())
+    return VideoCollectionDto(pages, episodes, season?.s("title").orEmpty(), season?.l("id") ?: 0L)
 }
 
 private fun readEpisode(ep: JSONObject): VideoEpisodeDto? {

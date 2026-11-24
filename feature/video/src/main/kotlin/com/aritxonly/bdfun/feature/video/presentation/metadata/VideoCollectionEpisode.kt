@@ -74,6 +74,7 @@ internal fun VideoCollectionEpisodeCover(episode: com.aritxonly.bdfun.core.model
                     .padding(end = 5.dp, bottom = 4.dp),
             )
         }
+        slots.watchProgress(this, episode.bvid)
     }
 }
 

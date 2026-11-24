@@ -43,10 +43,13 @@ fun BindPlayerProgressTracking(
             page.danmakuProgressMs = positionMs
             // 上报官方历史记录：首次 3 秒后，之后每 15 秒一次；播放结束时补一次
             val now = System.currentTimeMillis()
-            if (resumePlayback() && now - lastProgressSaveAt >= 10_000L) {
+            if (now - lastProgressSaveAt >= 10_000L) {
                 lastProgressSaveAt = now
                 ui.preparedMediaKey.value?.split(":")?.let { key ->
-                    progress.save(key[0], key.getOrNull(1)?.toLongOrNull() ?: 0L, positionMs, durationMs)
+                    val cid = key.getOrNull(1)?.toLongOrNull() ?: 0L
+                    // 观看记录（封面进度条/合集定位）不受「继续播放」开关影响；续播进度仍按原开关保存。
+                    progress.recordWatch(key[0], cid, positionMs, durationMs)
+                    if (resumePlayback()) progress.save(key[0], cid, positionMs, durationMs)
                 }
             }
             // 独立协程保持原 300ms 轮询节奏，节流与 busy 由纯状态容器处理。

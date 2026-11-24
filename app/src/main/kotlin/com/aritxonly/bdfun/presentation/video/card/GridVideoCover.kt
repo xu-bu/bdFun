@@ -48,16 +48,8 @@ internal fun GridVideoCover(
 
         GridCoverMetrics(video, reserveMeta)
 
-        // 历史记录：封面底部一条已看进度
-        if (progress > 0f) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .fillMaxWidth(progress.coerceIn(0f, 1f))
-                    .height(2.dp)
-                    .background(MiuixTheme.colorScheme.primary),
-            )
-        }
+        // 已看进度：本机观看记录优先，历史记录页传入的云端进度兜底
+        WatchProgressBar(video.bvid, progress)
 
         GridCoverSelection(selectionEnabled, selected)
         if (onCacheVideo != null && !selectionEnabled) VideoCacheButton { onCacheVideo(video) }

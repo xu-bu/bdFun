@@ -56,6 +56,7 @@ internal fun VideoRelatedCover(
                     .padding(end = 5.dp, bottom = 4.dp),
             )
         }
+        WatchProgressBar(item.bvid)
     }
 }
 

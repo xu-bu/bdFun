@@ -21,6 +21,9 @@ class LibraryStateHolderTest {
         var created = emptyList<FavoriteFolder>()
         var collected = emptyList<FavoriteFolder>()
         var season = emptyList<VideoItem>()
+        /** 按页返回合集（模拟 900 集的分页）；为空时沿用 [season]。 */
+        var seasonPages: Map<Int, List<VideoItem>>? = null
+        val seasonRequests = mutableListOf<Int>()
         var bangumiCards = emptyList<BangumiCard>()
         val removed = mutableListOf<Pair<Long, Long>>()
         val added = mutableListOf<Pair<Long, Long>>()
@@ -34,7 +37,11 @@ class LibraryStateHolderTest {
         override suspend fun defaultFolderId() = Outcome.Success(defaultId)
         override suspend fun createdFolders(page: Int) = Outcome.Success(created to false)
         override suspend fun collectedFolders(page: Int) = Outcome.Success(collected to false)
-        override suspend fun seasonVideos(seasonId: Long, page: Int) = Outcome.Success(season to false)
+        override suspend fun seasonVideos(seasonId: Long, page: Int): Outcome<Pair<List<VideoItem>, Boolean>> {
+            seasonRequests += page
+            val pages = seasonPages ?: return Outcome.Success(season to false)
+            return Outcome.Success(pages[page].orEmpty() to (page < pages.keys.max()))
+        }
         override suspend fun bangumi(page: Int, type: Int) = Outcome.Success(bangumiCards to false)
         override suspend fun history(max: Long, viewAt: Long, business: String): Outcome<HistoryPage> {
             requestedCursor = Triple(max, viewAt, business); return Outcome.Success(history)
@@ -156,5 +163,38 @@ class LibraryStateHolderTest {
         holder.closeOpened()
         assertEquals(2, holder.state.value.favorites.subTab)
         assertNull(holder.state.value.favorites.opened)
+    }
+
+    private fun seasonPages(count: Int) = (1..count).associateWith { page -> (0 until 20).map { video((page - 1) * 20L + it) } }
+
+    @Test fun seasonOpensAtFurthestPageAndLoadsEarlierPagesAfterJump() = runBlocking {
+        val source = Fake(); source.seasonPages = seasonPages(45)
+        val holder = LibraryStateHolder(source)
+        holder.openFolder(FavoriteFolder(20, "合集", 900, "", type = 21), startPage = 43, jumpTo = "BV849")
+        holder.loadOpened()
+        val opened = holder.state.value.favorites.opened!!
+        assertEquals(listOf(43), source.seasonRequests)
+        assertEquals(43, opened.firstPage); assertEquals("BV840", opened.videos.first().bvid)
+        assertEquals("BV849", opened.jumpTo)
+        holder.loadPreviousOpened()                       // 定位完成前不向上补页
+        assertEquals(listOf(43), source.seasonRequests)
+        holder.consumeOpenedJump(); holder.loadPreviousOpened()
+        val earlier = holder.state.value.favorites.opened!!
+        assertEquals(42, earlier.firstPage); assertEquals("BV820", earlier.videos.first().bvid)
+        assertEquals(40, earlier.videos.size)
+        holder.loadMoreOpened()
+        assertEquals(listOf(43, 42, 44), source.seasonRequests)
+        assertEquals("BV879", holder.state.value.favorites.opened!!.videos.last().bvid)
+    }
+
+    @Test fun seasonFallsBackToFirstPageWhenTargetIsNotOnItsPage() = runBlocking {
+        val source = Fake(); source.seasonPages = seasonPages(3)
+        val holder = LibraryStateHolder(source)
+        holder.openFolder(FavoriteFolder(20, "合集", 60, "", type = 21), startPage = 3, jumpTo = "BV_gone")
+        holder.loadOpened()
+        val opened = holder.state.value.favorites.opened!!
+        assertEquals(listOf(3, 1), source.seasonRequests)
+        assertEquals(1, opened.firstPage); assertFalse(opened.hasPrevious)
+        assertNull(opened.jumpTo); assertEquals("BV0", opened.videos.first().bvid)
     }
 }

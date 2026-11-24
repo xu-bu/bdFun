@@ -157,9 +157,12 @@ private fun MineVideoPreviews(section: MinePreviewSection, history: Boolean, nav
                         fontSize = 10.sp, modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp)
                             .clip(RoundedCornerShape(4.dp)).background(Color.Black.copy(alpha = 0.55f))
                             .padding(horizontal = 4.dp, vertical = 2.dp))
-                    if (history && entry.duration > 0 && entry.progress > 0) Box(Modifier.align(Alignment.BottomStart)
-                        .fillMaxWidth((entry.progress.toFloat() / entry.duration).coerceIn(0f, 1f))
-                        .height(3.dp).background(MiuixTheme.colorScheme.primary))
+                    // 本机观看记录优先；历史记录的云端进度（-1 = 已看完）兜底
+                    WatchProgressBar(entry.bvid, when {
+                        !history || entry.duration <= 0 -> 0f
+                        entry.progress < 0 -> 1f
+                        else -> (entry.progress.toFloat() / entry.duration).coerceIn(0f, 1f)
+                    })
                 }
                 Text(entry.title, minLines = 2, maxLines = 2, overflow = TextOverflow.Ellipsis, fontSize = 12.sp, lineHeight = 18.sp,
                     color = MiuixTheme.colorScheme.onBackground)

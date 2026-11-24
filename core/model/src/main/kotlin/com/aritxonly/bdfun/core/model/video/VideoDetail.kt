@@ -29,6 +29,7 @@ data class VideoDetail(
     val pages get() = info.pages
     val episodes get() = info.episodes
     val seasonTitle get() = info.seasonTitle
+    val collectionSeasonId get() = info.collectionSeasonId
     /** 1 = 原创，2 = 转载；接口缺失时为 0。 */
     val copyright get() = info.copyright
     val isFollowed get() = interaction.isFollowed
@@ -64,6 +65,8 @@ data class VideoDetailInfo(
     val episodes: List<VideoEpisode> = emptyList(),
     /** UGC 合集标题（没有合集时为空）。 */
     val seasonTitle: String = "",
+    /** UGC 合集 ID（`ugc_season.id`，没有合集时为 0）；与收藏页「合集」的 season_id 相同。 */
+    val collectionSeasonId: Long = 0L,
     /** 1 = 原创，2 = 转载；老缓存/缺失时为 0。 */
     val copyright: Int = 0,
 )

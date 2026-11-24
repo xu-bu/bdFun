@@ -10,6 +10,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalViewConfiguration
@@ -52,7 +53,9 @@ internal fun LibraryPagerPage(
             mode == runtime.currentMode, progress, runtime.presentation.scrollTopTick, runtime.dependencies.entrance),
         actions = LibraryModeActions(runtime.data, runtime::selectMode, runtime.interaction::toggleSelected,
             runtime::selectFolder, runtime.navigation.onOpenVideo, { runtime.loadMore(mode) }, runtime.dependencies.playbackQueue::set,
-            runtime::selectSubTab, runtime::openFolder, runtime::closeFolder),
+            runtime::selectSubTab, runtime::openFolder, runtime::closeFolder,
+            onLoadPrevious = { runtime.scope.launch { runtime.data.loadPreviousOpened() } },
+            onConsumeJump = runtime.data::consumeOpenedJump),
     )
 }
 internal fun libraryModeContent(

@@ -44,15 +44,7 @@ internal fun LargeVideoCover(video: VideoItem, progress: Float, onCacheVideo: ((
                 ),
         )
         LargeCoverMetrics(video)
-        if (progress > 0f) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .fillMaxWidth(progress.coerceIn(0f, 1f))
-                    .height(2.dp)
-                    .background(colors.primary),
-            )
-        }
+        WatchProgressBar(video.bvid, progress)
         if (onCacheVideo != null) VideoCacheButton { onCacheVideo(video) }
     }
 }

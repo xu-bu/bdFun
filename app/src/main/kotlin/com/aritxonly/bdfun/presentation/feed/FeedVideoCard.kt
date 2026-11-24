@@ -101,6 +101,7 @@ internal fun FeedVideoCard(
                 ),
         )
         FeedVideoMetrics(video, muted, onToggleMute)
+        WatchProgressBar(video.bvid)
     }
     Text(
         text = video.title,
