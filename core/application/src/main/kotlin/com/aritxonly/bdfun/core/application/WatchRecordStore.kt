@@ -73,6 +73,9 @@ class WatchRecordStore(private val storage: WatchRecordStorage?, private val clo
 
     fun furthest(seasonId: Long): CollectionFurthest? = synchronized(lock) { furthest[seasonId] }
 
+    /** 某个视频当前的记录快照；界面订阅前用作初值，持续更新仍走 [records]。 */
+    fun recordOf(bvid: String): WatchRecord? = recordsFlow.value[bvid]
+
     private fun advance(seasonId: Long, index: Int, bvid: String) {
         val next = mergeCollectionFurthest(furthest[seasonId], index, bvid, clock()) ?: return
         furthest[seasonId] = next

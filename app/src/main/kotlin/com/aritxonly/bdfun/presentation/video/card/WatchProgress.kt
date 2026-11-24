@@ -30,7 +30,9 @@ internal fun rememberWatchFraction(bvid: String, fallback: Float = 0f): Float {
     val store = LocalWatchRecords.current
     if (store == null || bvid.isBlank()) return fallback
     val flow = remember(store, bvid) { store.records.map { it[bvid] }.distinctUntilChanged() }
-    val record by flow.collectAsState(initial = store.records.value[bvid])
+    // 初值取当前快照，卡片首帧就画出进度条，不会先空一帧再出现。
+    val initial = remember(store, bvid) { store.recordOf(bvid) }
+    val record by flow.collectAsState(initial = initial)
     return record?.fraction?.takeIf { it > 0f } ?: fallback
 }
 
