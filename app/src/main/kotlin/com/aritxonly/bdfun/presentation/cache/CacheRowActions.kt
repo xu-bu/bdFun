@@ -13,36 +13,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aritxonly.bdfun.BrandPink
-import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.aritxonly.bdfun.core.model.cache.CacheStatus
 
 
 @Composable
 internal fun CacheRowActions(
     status: com.aritxonly.bdfun.core.model.cache.CacheStatus,
-    onOpen: () -> Unit,
     onOpenDetail: () -> Unit,
     onRetry: () -> Unit,
-    onDelete: () -> Unit,
+    enabled: Boolean = true,
 ) {
-    val colors = MiuixTheme.colorScheme
     Column(horizontalAlignment = Alignment.End) {
-        if (status == com.aritxonly.bdfun.core.model.cache.CacheStatus.Completed) {
-            Text(
-                text = "播放",
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(interactionSource = null, indication = null, onClick = onOpen)
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                color = BrandPink,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Normal,
-            )
-        } else if (status == com.aritxonly.bdfun.core.model.cache.CacheStatus.Failed) {
+        if (status == com.aritxonly.bdfun.core.model.cache.CacheStatus.Failed) {
             Text(
                 text = "重试",
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
-                    .clickable(interactionSource = null, indication = null, onClick = onRetry)
+                    .clickable(
+                        interactionSource = null,
+                        indication = null,
+                        enabled = enabled,
+                        onClick = onRetry,
+                    )
                     .padding(horizontal = 8.dp, vertical = 4.dp),
                 color = BrandPink,
                 fontSize = 12.sp,
@@ -50,29 +42,21 @@ internal fun CacheRowActions(
             )
         }
         // 详情走在线路由：只带 BV 号，让 VideoActivity 自己拉完整详情/评论；
-        // 与上方的「播放」区分——播放优先使用本地缓存并立刻起播。
+        // 本地起播改为点列表项，不再单独放「播放」按钮。
         Text(
             text = "详情",
-            modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .clickable(interactionSource = null, indication = null, onClick = onOpenDetail)
-                .padding(horizontal = 8.dp, vertical = 3.dp),
-            color = BrandPink,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Normal,
-        )
-        Text(
-            text = "删除",
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
                 .clickable(
                     interactionSource = null,
                     indication = null,
-                    onClick = onDelete,
+                    enabled = enabled,
+                    onClick = onOpenDetail,
                 )
                 .padding(horizontal = 8.dp, vertical = 3.dp),
-            color = colors.onBackgroundVariant,
+            color = BrandPink,
             fontSize = 11.sp,
+            fontWeight = FontWeight.Normal,
         )
     }
 }

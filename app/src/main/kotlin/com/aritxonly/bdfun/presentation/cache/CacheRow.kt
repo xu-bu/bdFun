@@ -22,7 +22,7 @@ internal fun CacheRow(
     onOpen: () -> Unit,
     onOpenDetail: () -> Unit,
     onRetry: () -> Unit,
-    onDelete: () -> Unit,
+    interactive: Boolean = true,
 ) {
     val colors = MiuixTheme.colorScheme
     Row(
@@ -31,7 +31,7 @@ internal fun CacheRow(
             .clickable(
                 interactionSource = null,
                 indication = null,
-                enabled = entry.status == CacheStatus.Completed,
+                enabled = interactive && entry.status == CacheStatus.Completed,
                 onClick = onOpen,
             )
             .padding(10.dp),
@@ -41,6 +41,6 @@ internal fun CacheRow(
         Spacer(Modifier.width(10.dp))
         CacheRowContent(entry)
         Spacer(Modifier.width(8.dp))
-        CacheRowActions(entry.status, onOpen, onOpenDetail, onRetry, onDelete)
+        CacheRowActions(entry.status, onOpenDetail, onRetry, enabled = interactive)
     }
 }
