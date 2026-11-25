@@ -2,22 +2,60 @@
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import urllib.request
+
+CONVENTIONAL_TYPE = {
+    'feat': '新增', 'fix': '修复', 'perf': '优化', 'refactor': '重构',
+    'revert': '修复', 'docs': '文档', 'style': '优化', 'test': '测试',
+    'build': '构建', 'ci': '构建', 'chore': '维护',
+}
+TYPE_PREFIX = re.compile(r'^([a-zA-Z]+)(?:\([^)]*\))?!?:\s*')
+LEADING_CATEGORY = re.compile(r'^(新增|修复|优化|重构|更新|文档|测试|构建|维护)\s*')
 
 
 def git(*args):
     return subprocess.check_output(['git', *args], text=True).strip()
 
 
+def changes_since_last_tag(with_body):
+    tags = git('tag', '--merged', 'HEAD', '--sort=-creatordate').splitlines()
+    previous = tags[0] if tags else None
+    revision = f'{previous}..HEAD' if previous else 'HEAD'
+    fmt = '%h %s%n%b' if with_body else '%s'
+    return git('log', '--no-merges', f'--format={fmt}', revision)
+
+
+def auto_notes():
+    """push 自动发布：按提交主题归类，不调用外部 API，不解释提交正文。"""
+    commits = changes_since_last_tag(with_body=False)
+    if not commits.strip():
+        raise SystemExit('当前版本与上一标签之间没有提交，请检查发布分支')
+    lines = []
+    for subject in commits.splitlines():
+        subject = subject.strip()
+        if not subject:
+            continue
+        match = TYPE_PREFIX.match(subject)
+        category = CONVENTIONAL_TYPE.get(match.group(1).lower(), '变更') if match else '变更'
+        if match:
+            subject = subject[match.end():]
+        subject = LEADING_CATEGORY.sub('', subject).strip()
+        if subject:
+            lines.append(f'- {category} {subject}')
+    if not lines:
+        raise SystemExit('提交主题为空，无法生成更新日志')
+    return '\n'.join(lines)
+
+
 def generate():
     manual = os.environ.get('RELEASE_NOTES', '').strip()
     if manual:
         return manual
-    tags = git('tag', '--merged', 'HEAD', '--sort=-creatordate').splitlines()
-    previous = tags[0] if tags else None
-    revision = f'{previous}..HEAD' if previous else 'HEAD'
-    commits = git('log', '--no-merges', '--format=%h %s%n%b', revision)
+    if os.environ.get('AUTO_NOTES') == 'true':
+        return auto_notes()
+    commits = changes_since_last_tag(with_body=True)
     if os.environ.get('GENERATE_NOTES') != 'true':
         raise SystemExit('请填写更新日志，或启用 DeepSeek Agent 自动生成')
     if not commits:

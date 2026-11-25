@@ -4,8 +4,8 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: '版本号：preview-5.1 或 1.1.0（自动计算 versionCode）'
-        required: true
+        description: '版本号：preview-5.1 或 1.1.0；留空则自动取下一个 preview 版本'
+        required: false
         type: string
       notes:
         description: '更新日志（Markdown 列表；支持多行，优先于自动生成）'
@@ -15,12 +15,20 @@ on:
         description: '使用 DeepSeek Agent 根据提交自动生成并自审日志'
         default: false
         type: boolean
+  push:
+    branches: [main]
+    # 仅文档/工作流/工具改动不产生新版本，避免元数据提交刷 tag。
+    paths-ignore:
+      - '.github/**'
+      - 'docs/**'
+      - 'tools/**'
+      - '*.md'
 
 permissions:
   contents: read
 
 concurrency:
-  group: release-${{ inputs.version }}
+  group: release-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -33,10 +41,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          fetch-tags: true
           persist-credentials: false
-      - name: 校验版本与标签
+      - name: 解析发布版本
         env:
-          RELEASE_VERSION: ${{ inputs.version }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: python3 tools/resolve-release-version.py "$INPUT_VERSION" >> "$GITHUB_ENV"
+      - name: 校验版本与标签
         run: |
           python3 - <<'PYCODE'
           import os, re, subprocess
@@ -52,6 +63,8 @@ jobs:
         env:
           RELEASE_NOTES: ${{ inputs.notes }}
           GENERATE_NOTES: ${{ inputs.generate_notes }}
+          # push 自动发布不需要外部 API，直接按提交主题生成日志。
+          AUTO_NOTES: ${{ github.event_name == 'push' }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           DEEPSEEK_MODEL: ${{ vars.DEEPSEEK_MODEL }}
         run: python3 tools/release-notes-agent.py
@@ -89,7 +102,6 @@ jobs:
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
       - name: 构建签名发布版 APK
         env:
-          RELEASE_VERSION: ${{ inputs.version }}
           ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
@@ -98,7 +110,7 @@ jobs:
         run: bash ./gradlew :core:domain:test :infra:bili:testDebugUnitTest :app:testDebugUnitTest :app:assembleRelease "-PreleaseVersion=$RELEASE_VERSION" --stacktrace
       - name: 校验签名并准备发布附件
         env:
-          RELEASE_TAG: v${{ inputs.version }}
+          RELEASE_TAG: v${{ env.RELEASE_VERSION }}
         run: |
           "$ANDROID_HOME/build-tools/37.0.0/apksigner" verify --verbose app/build/outputs/apk/release/app-release.apk
           mkdir -p release
@@ -110,7 +122,7 @@ jobs:
       - name: 上传发布版 APK
         uses: actions/upload-artifact@v7
         with:
-          path: release/bdFun-v${{ inputs.version }}.apk
+          path: release/bdFun-v${{ env.RELEASE_VERSION }}.apk
           archive: false
           if-no-files-found: error
           retention-days: 30
@@ -162,7 +174,7 @@ jobs:
           RELEASE_SHA: ${{ github.sha }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: v${{ inputs.version }}
+          RELEASE_TAG: v${{ env.RELEASE_VERSION }}
         run: |
           args=()
           if [[ "$RELEASE_TAG" == vpreview-* ]]; then args+=(--prerelease); fi

@@ -1,16 +1,21 @@
 # Release 发布与自动更新
 
-Actions → Android 手动发布 → 选择待发布分支 → 填写 `version`。
-不必修改源码版本或预建 tag；流程构建所选提交，成功后创建 `v版本号` 标签和 Release。
-已经存在的标签拒绝覆盖，请递增版本重新发布。
+推送到 `main`（且改动涉及应用源码）会自动触发 Android 手动发布工作流：按已有
+`vpreview-y.z` 标签自动递增到下一个未占用版本，构建签名 APK 并创建 `v版本号` 标签和
+GitHub Release，无需人工填写版本。仅改 `.github/`、`docs/`、`tools/` 或 Markdown 的提交
+不触发发布，避免元数据提交刷 tag；同分支发布串行执行，不会并发抢占标签。
+
+也可 Actions → Android 手动发布 → 选择分支 → 填写 `version` 手动发布；留空同样自动取下一个
+preview 版本。已经存在的标签拒绝覆盖。不必修改源码版本或预建 tag。
 
 版本规则：`preview-y.z` 或 `x.y.z`；y/z 为 0..99，x 为 0..999，禁止前导零。
 versionCode = x×10000+y×100+z，preview 的 x=0。例如 preview-5.0=500，1.1.0=10100。
 本地构建可用 `bash ./gradlew :app:assembleRelease -PreleaseVersion=1.1.0`。
 BUILD_STAMP 仍记录构建时刻，debug 仍增加 -debug 后缀。
 
-`notes` 支持 Markdown 列表并优先使用。留空时必须启用 `generate_notes`，由 DeepSeek
-Agent 读取上一标签至 HEAD 的提交，生成列表并自审一轮。首版使用全部提交。
+`notes` 支持 Markdown 列表并优先使用。push 自动发布不需要外部 API，按上一标签至 HEAD 的
+提交主题生成列表（feat/fix/perf 等前缀映射为中文分类）。手动发布留空日志时须启用
+`generate_notes`，由 DeepSeek Agent 读取提交、生成列表并自审一轮；首版使用全部提交。
 生成失败阻止发布，可填写手动日志重新运行。发布后应检查 Release 日志准确性。
 
 Secrets：KEYSTORE_BASE64、KEYSTORE_PASSWORD、KEY_ALIAS、KEY_PASSWORD；
@@ -18,7 +23,7 @@ Secrets：KEYSTORE_BASE64、KEYSTORE_PASSWORD、KEY_ALIAS、KEY_PASSWORD；
 API Key 仅供 Actions 使用，不编译进 APK。四项签名配置缺一即停止，禁止 CI 退回 debug 签名。
 工具链沿用 JDK21 / SDK37 / Build Tools37.0.0 与固定 Miuix 快照。
 构建运行 domain/infra-bili/app JVM 测试及 R8 release，校验签名并附 APK、SHA256SUMS 与 mapping。
-preview 自动标记 prerelease，正式版本发布为 stable。推送和 PR 不自动发布。
+preview 自动标记 prerelease，正式版本发布为 stable。push 到 main 自动发布 preview，PR 不自动发布。
 
 客户端：设置 → 关于 → 点击顶部图标/名称/版本身份区，进入页面自动检查。release 冷启动每日检查一次，debug 不自动弹更新。
 preview 安装检查 preview 与正式版；正式安装只检查正式版；按 versionCode 比较，
