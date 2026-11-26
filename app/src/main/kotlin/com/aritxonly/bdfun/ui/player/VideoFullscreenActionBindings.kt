@@ -9,9 +9,7 @@ import com.aritxonly.bdfun.ui.FullscreenPreferenceActions
 import com.aritxonly.bdfun.ui.FullscreenNavigationActions
 
 import android.app.Activity
-import android.app.PictureInPictureParams
 import android.content.Context
-import android.util.Rational
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.aritxonly.bdfun.core.application.PlaybackController
@@ -160,11 +158,9 @@ internal class VideoFullscreenActionBindings(
     private val onPictureInPicture: () -> Unit = {
         runCatching {
             if (android.os.Build.VERSION.SDK_INT >= 26) {
-                activity?.enterPictureInPictureMode(
-                    PictureInPictureParams.Builder()
-                        .setAspectRatio(Rational(16, 9))
-                        .build(),
-                )
+                activity?.let {
+                    it.enterPictureInPictureMode(videoPictureInPictureParams(it, playing))
+                }
             }
         }
     }

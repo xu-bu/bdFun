@@ -16,6 +16,9 @@ class MediaActionReceiver : BroadcastReceiver() {
             MediaPlaybackSession.ACTION_FORWARD -> session.seekBy(10_000)
             MediaPlaybackSession.ACTION_PREV -> session.previous()
             MediaPlaybackSession.ACTION_NEXT -> session.next()
+            ACTION_PIP_TOGGLE -> session.toggle()
+            ACTION_PIP_REWIND -> session.seekBy(-PIP_SEEK_MS)
+            ACTION_PIP_FORWARD -> session.seekBy(PIP_SEEK_MS)
         }
     }
 }

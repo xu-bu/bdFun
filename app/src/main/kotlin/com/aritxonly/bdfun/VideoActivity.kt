@@ -9,6 +9,9 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import com.aritxonly.bdfun.ui.LocalVideoPageState
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
@@ -171,10 +174,7 @@ class VideoActivity : ComponentActivity() {
         if (com.aritxonly.bdfun.core.domain.shouldEnterPipOnExit(
                 s.showDiscAfterVideo, s.exitVideoControl == 0, playWhenReady)) {
             val ok = runCatching {
-                val params = android.app.PictureInPictureParams.Builder()
-                    .setAspectRatio(android.util.Rational(16, 9))
-                    .build()
-                enterPictureInPictureMode(params)
+                enterPictureInPictureMode(com.aritxonly.bdfun.ui.videoPictureInPictureParams(this, currentlyPlaying()))
             }.getOrDefault(false)
             if (ok) return
         }
@@ -187,13 +187,30 @@ class VideoActivity : ComponentActivity() {
         val pages = AppGraph.pictureInPicturePages
         if (isInPictureInPictureMode) {
             pages.enter(this) { closePictureInPicturePage(removeTask = false) }
+            followPictureInPicturePlayState()
             return
         }
+        pipPlayStateJob?.cancel(); pipPlayStateJob = null
         pages.exit(this)
         // 离开画中画时页面已 stop：用户点了小窗的关闭（展开回全屏时页面仍是 STARTED）。
         // 关闭小窗应当停止播放并移除小窗所在的独立任务，而不是让它在后台继续响。
         if (lifecycle.currentState == androidx.lifecycle.Lifecycle.State.CREATED) {
             closePictureInPicturePage(removeTask = true)
+        }
+    }
+
+    private var pipPlayStateJob: kotlinx.coroutines.Job? = null
+    private fun currentlyPlaying() = com.aritxonly.bdfun.ui.BackgroundPlayback.state.value.playback.playWhenReady
+
+    /** 小窗里的播放/暂停按钮跟随实际播放状态（在小窗、通知栏或耳机上切换后都要更新图标）。 */
+    private fun followPictureInPicturePlayState() {
+        pipPlayStateJob?.cancel()
+        pipPlayStateJob = lifecycleScope.launch {
+            com.aritxonly.bdfun.ui.BackgroundPlayback.state
+                .map { it.playback.playWhenReady }.distinctUntilChanged()
+                .collect { playing ->
+                    runCatching { setPictureInPictureParams(com.aritxonly.bdfun.ui.videoPictureInPictureParams(this@VideoActivity, playing)) }
+                }
         }
     }
 
