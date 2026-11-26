@@ -325,7 +325,8 @@ internal class AppContainer(
             com.aritxonly.bdfun.feature.library.application.LibraryInteractionStateHolder(
                 settings.repository.general, settings.state.map { Unit }, scope,
             )
-        }, com.aritxonly.bdfun.feature.library.application.LibraryEntranceRegistry(), playbackQueue, watchRecords)
+        }, com.aritxonly.bdfun.feature.library.application.LibraryEntranceRegistry(), playbackQueue, watchRecords,
+            com.aritxonly.bdfun.core.application.RecentFolderStore(context?.let { com.aritxonly.bdfun.infra.storage.AndroidRecentFolderStorage(it) }))
     }
     fun libraryStateHolder(): com.aritxonly.bdfun.feature.library.application.LibraryStateHolder {
         val identity = sessionController.identity
@@ -360,7 +361,6 @@ internal class AppContainer(
     }
     fun close() { closed = true; homeSlot.close(); dynamicSlot.close(); videoReadCache.close(); settings.close(); presentationScope.cancel() }
     val sentHistory: SentHistoryStore? = context?.let { SentHistoryStore(it.applicationContext) }
-
     init {
         configureCacheRetry() // 缓存失败项重试解析器；直链有时效，重试时现取详情与直链。
         com.aritxonly.bdfun.core.application.observeRecommendationPlayback(

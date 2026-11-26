@@ -18,6 +18,8 @@ internal class LibraryDependencies(
     val playbackQueue: com.aritxonly.bdfun.core.application.PlaybackQueueStateHolder,
     /** 收藏页「合集」据此定位看过的最远一集；为空时从第一页开始。 */
     val watchRecords: com.aritxonly.bdfun.core.application.WatchRecordStore? = null,
+    /** 「我的收藏与订阅」按最近点开排序。 */
+    val recentFolders: com.aritxonly.bdfun.core.application.RecentFolderStore? = null,
 )
 /** 收藏二级 tab 的展示数据，单独成组以控制 LibraryModeContent 主构造参数数量（上限 12）。 */
 internal data class FavoriteSubContent(

@@ -47,8 +47,13 @@ private fun LibraryContent(runtime: LibraryRuntime) {
 internal fun LibraryPagerPage(
     runtime: LibraryRuntime, data: LibraryUiState, interaction: LibraryInteractionState, progress: State<Float>, mode: Int,
 ) {
+    // 收藏与订阅的排序依据；点开某个合集返回后，它会排到最前。
+    val recentStore = runtime.dependencies.recentFolders
+    val recentOpened by androidx.compose.runtime.remember(recentStore) {
+        recentStore?.openedAt ?: kotlinx.coroutines.flow.flowOf(emptyMap())
+    }.collectAsState(initial = androidx.compose.runtime.remember(recentStore) { recentStore?.snapshot().orEmpty() })
     LibraryModePage(
-        content = libraryModeContent(runtime.interaction, data, interaction, mode),
+        content = libraryModeContent(runtime.interaction, data, interaction, mode, recentOpened),
         layout = LibraryModeLayout(mode, runtime.request.title, runtime.request.fixedMode == null,
             mode == runtime.currentMode, progress, runtime.presentation.scrollTopTick, runtime.dependencies.entrance),
         actions = LibraryModeActions(runtime.data, runtime::selectMode, runtime.interaction::toggleSelected,
@@ -60,6 +65,7 @@ internal fun LibraryPagerPage(
 }
 internal fun libraryModeContent(
     interaction: LibraryInteractionStateHolder, data: LibraryUiState, ui: LibraryInteractionState, mode: Int,
+    recentOpened: Map<String, Long> = emptyMap(),
 ) = LibraryModeContent(
     data.favorites.folders, data.favorites.ready, data.favorites.index,
     run {
@@ -86,7 +92,8 @@ internal fun libraryModeContent(
         tab = data.favorites.subTab,
         folders = when (data.favorites.subTab) {
             1 -> data.favorites.created.folders
-            2 -> data.favorites.collected.folders
+            // 收藏与订阅：最近点开的排最前（本机记录，接口只按收藏时间返回）
+            2 -> com.aritxonly.bdfun.core.domain.orderByRecentOpen(data.favorites.collected.folders, recentOpened)
             else -> emptyList()
         },
         bangumi = data.favorites.bangumi[if (data.favorites.subTab == 4) 2 else 1]?.items.orEmpty(),

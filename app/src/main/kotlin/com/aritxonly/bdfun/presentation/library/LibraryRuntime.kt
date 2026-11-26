@@ -41,6 +41,7 @@ internal class LibraryRuntime(
     fun selectSubTab(tab: Int) { interaction.selectFolder(); data.selectSubTab(tab); scope.launch { data.loadSubTab() } }
     fun openFolder(folder: FavoriteFolder) {
         interaction.selectFolder()
+        dependencies.recentFolders?.markOpened(folder)
         // 订阅合集：从看过的最远一集所在页开始加载，列表打开就停在那一集。
         val furthest = if (folder.type == 21) dependencies.watchRecords?.furthest(folder.id) else null
         data.openFolder(folder, furthest?.let { com.aritxonly.bdfun.core.domain.favoriteSeasonPageOf(it.index) } ?: 1, furthest?.bvid)
