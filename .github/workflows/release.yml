@@ -36,6 +36,9 @@ jobs:
     name: 构建签名发布包
     runs-on: ubuntu-24.04
     timeout-minutes: 45
+    # $GITHUB_ENV 只在本 job 内有效；发布 job 必须经 outputs 拿到版本，否则标签会变成空的 "v"。
+    outputs:
+      version: ${{ steps.resolve.outputs.RELEASE_VERSION }}
     steps:
       - name: 检出项目代码
         uses: actions/checkout@v4
@@ -44,9 +47,13 @@ jobs:
           fetch-tags: true
           persist-credentials: false
       - name: 解析发布版本
+        id: resolve
         env:
           INPUT_VERSION: ${{ inputs.version }}
-        run: python3 tools/resolve-release-version.py "$INPUT_VERSION" >> "$GITHUB_ENV"
+        run: |
+          line="$(python3 tools/resolve-release-version.py "$INPUT_VERSION")"
+          echo "$line" >> "$GITHUB_ENV"
+          echo "$line" >> "$GITHUB_OUTPUT"
       - name: 校验版本与标签
         run: |
           python3 - <<'PYCODE'
@@ -174,8 +181,12 @@ jobs:
           RELEASE_SHA: ${{ github.sha }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_TAG: v${{ env.RELEASE_VERSION }}
+          RELEASE_TAG: v${{ needs.build.outputs.version }}
         run: |
+          if [[ "$RELEASE_TAG" == "v" ]]; then
+            echo "::error::发布版本为空，拒绝创建标签 v"
+            exit 1
+          fi
           args=()
           if [[ "$RELEASE_TAG" == vpreview-* ]]; then args+=(--prerelease); fi
           gh release create "$RELEASE_TAG" release/*.apk release/SHA256SUMS.txt release/mapping.txt \
