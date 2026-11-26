@@ -170,9 +170,12 @@ class VideoActivity : ComponentActivity() {
             return
         }
         // 用户主动暂停后退出不进画中画；playWhenReady=false 表示暂停（缓冲中仍为 true）。
-        val playWhenReady = com.aritxonly.bdfun.ui.BackgroundPlayback.playbackSnapshot.playWhenReady
+        // 例外：播放源还没准备好时播放器空闲、playWhenReady 仍是默认 false，按自动播放设置判断。
+        val snapshot = com.aritxonly.bdfun.ui.BackgroundPlayback.playbackSnapshot
+        val stillLoading = snapshot.phase == com.aritxonly.bdfun.core.application.PlaybackPhase.Idle &&
+            !snapshot.ready && snapshot.error == null
         if (com.aritxonly.bdfun.core.domain.shouldEnterPipOnExit(
-                s.showDiscAfterVideo, s.exitVideoControl == 0, playWhenReady)) {
+                s.showDiscAfterVideo, s.exitVideoControl == 0, snapshot.playWhenReady, stillLoading, s.autoPlay)) {
             val ok = runCatching {
                 enterPictureInPictureMode(com.aritxonly.bdfun.ui.videoPictureInPictureParams(this, currentlyPlaying()))
             }.getOrDefault(false)

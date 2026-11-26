@@ -29,4 +29,12 @@ class BackgroundPlaybackPolicyTest {
         assertFalse(shouldEnterPipOnExit(false, true, true))
         assertFalse(shouldEnterPipOnExit(true, false, true))
     }
+
+    @Test fun loadingVideoEntersPipWhenItWillAutoPlay() {
+        // 详情/播放地址还在加载时播放器空闲、playWhenReady 为默认 false，不能当成用户暂停。
+        assertTrue(shouldEnterPipOnExit(true, true, false, stillLoading = true, autoPlay = true))
+        assertFalse(shouldEnterPipOnExit(true, true, false, stillLoading = true, autoPlay = false))
+        assertFalse(shouldEnterPipOnExit(true, true, false, stillLoading = false, autoPlay = true))
+        assertFalse(shouldEnterPipOnExit(true, false, false, stillLoading = true, autoPlay = true))
+    }
 }
