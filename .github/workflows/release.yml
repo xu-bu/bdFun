@@ -123,6 +123,8 @@ jobs:
           mkdir -p release
           cp app/build/outputs/apk/release/app-release.apk "release/bdFun-${RELEASE_TAG}.apk"
           cp release-notes.md release/release-notes.md
+          # mapping 只作为 CI artifact 供崩溃反混淆使用，不附加到公开 Release。
+          cp app/build/outputs/mapping/release/mapping.txt release/mapping.txt
           cd release
           sha256sum -- *.apk > SHA256SUMS.txt
       - name: 上传发布版 APK
