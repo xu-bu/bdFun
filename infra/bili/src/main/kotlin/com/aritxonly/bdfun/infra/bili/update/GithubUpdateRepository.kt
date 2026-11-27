@@ -19,7 +19,7 @@ class GithubUpdateRepository : UpdateRepository {
             // releases/latest 排除 preview，因此必须读取列表。
             for (page in 1..5) {
                 val request = Request.Builder()
-                    .url("https://api.github.com/repos/QxTeak/bdFun/releases?per_page=100&page=$page")
+                    .url("$RELEASES_API_URL?per_page=100&page=$page")
                     .header("Accept", "application/vnd.github+json").header("User-Agent", "bdFun")
                     .header("X-GitHub-Api-Version", "2022-11-28").build()
                 val array = client.newCall(request).execute().use { response ->

@@ -12,9 +12,7 @@ internal fun githubRelease(item: JSONObject): UpdateRelease? {
     val assets = item.optJSONArray("assets") ?: JSONArray()
     val apks = (0 until assets.length()).map { assets.getJSONObject(it) }
         .filter { it.optString("name").endsWith(".apk") && !it.optString("name").contains("debug", true) }
-    val apk = apks.singleOrNull()?.optString("browser_download_url")?.takeIf {
-        it.startsWith("https://github.com/QxTeak/bdFun/releases/download/")
-    }
+    val apk = apks.singleOrNull()?.optString("browser_download_url")?.takeIf(::isReleaseDownloadUrl)
     return UpdateRelease(version, item.optString("body"), item.getString("html_url"), apk,
         item.optBoolean("prerelease") || version.name.startsWith("preview-"))
 }

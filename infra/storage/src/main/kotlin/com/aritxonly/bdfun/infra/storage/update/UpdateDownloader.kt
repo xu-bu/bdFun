@@ -4,6 +4,7 @@ import android.app.DownloadManager
 import android.content.Context
 import android.net.Uri
 import android.os.Environment
+import com.aritxonly.bdfun.core.domain.update.isReleaseDownloadUrl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -12,7 +13,7 @@ class UpdateDownloader(private val context: Context) {
     private val mutable = MutableStateFlow("")
     val state = mutable.asStateFlow()
     fun start(version: String, url: String?) {
-        if (url == null || !url.startsWith("https://github.com/QxTeak/bdFun/releases/download/")) return
+        if (url == null || !isReleaseDownloadUrl(url)) return
         try {
             val manager = context.getSystemService(DownloadManager::class.java)
             val preferences = context.getSharedPreferences("app_updates", Context.MODE_PRIVATE)

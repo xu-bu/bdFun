@@ -2,6 +2,7 @@ package com.aritxonly.bdfun.infra.bili.update
 
 import com.aritxonly.bdfun.core.domain.update.latestRelease
 import org.json.JSONArray
+import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -17,6 +18,20 @@ class GithubReleaseMapperTest {
         assertTrue(older.apk!!.endsWith("bdFun-preview-4.3-release.apk"))
         assertFalse(older.apk!!.contains("debug"))
     }
+    @Test fun thisRepositoriesDownloadsAreAccepted() {
+        val url = "https://github.com/xu-bu/bdFun/releases/download/vpreview-7.9/bdFun-vpreview-7.9.apk"
+        val item = JSONObject()
+            .put("tag_name", "vpreview-7.9")
+            .put("html_url", "https://github.com/xu-bu/bdFun/releases/tag/vpreview-7.9")
+            .put("prerelease", true)
+            .put("assets", JSONArray().put(JSONObject()
+                .put("name", "bdFun-vpreview-7.9.apk").put("browser_download_url", url)))
+        val release = githubRelease(item)!!
+        assertEquals(709, release.version.code)
+        assertEquals(url, release.apk)
+        assertTrue(release.prerelease)
+    }
+
     @Test fun unknownVersionsRemainHistoryOnlyAndDraftsAreHidden() {
         val array = fixture()
         val legacy = githubRelease(array.getJSONObject(3))!!

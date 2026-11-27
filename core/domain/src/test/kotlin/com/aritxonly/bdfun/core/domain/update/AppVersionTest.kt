@@ -9,6 +9,8 @@ class AppVersionTest {
         assertEquals(10100, AppVersion.parse("1.1.0")?.code)
         assertEquals(9999999, AppVersion.parse("999.99.99")?.code)
         assertEquals(599, AppVersion.parse("vpreview-5.99")?.code)
+        assertEquals(705, AppVersion.parse("vpreview-7.5")?.code)
+        assertEquals(709, AppVersion.parse("vpreview-7.9")?.code)
         assertTrue(AppVersion.parse("1.0.0")!!.code > AppVersion.parse("preview-99.99")!!.code)
     }
     @Test fun invalidVersionsNeverBecomeUpdates() {

@@ -22,10 +22,14 @@ Secrets：KEYSTORE_BASE64、KEYSTORE_PASSWORD、KEY_ALIAS、KEY_PASSWORD；
 自动日志另需 DEEPSEEK_API_KEY，可用变量 DEEPSEEK_MODEL 覆盖默认 deepseek-chat。
 API Key 仅供 Actions 使用，不编译进 APK。四项签名配置缺一即停止，禁止 CI 退回 debug 签名。
 工具链沿用 JDK21 / SDK37 / Build Tools37.0.0 与固定 Miuix 快照。
-构建运行 domain/infra-bili/app JVM 测试及 R8 release，校验签名并附 APK、SHA256SUMS 与 mapping。
+构建运行 domain/infra-bili/app JVM 测试及 R8 release，校验签名；公开 Release 只附 APK 与
+SHA256SUMS。R8 mapping.txt 约 140MB，仅上传为 CI artifact（保留 30 天）用于崩溃反混淆，
+不再放进公开 Release 拖慢下载。
 preview 自动标记 prerelease，正式版本发布为 stable。push 到 main 自动发布 preview，PR 不自动发布。
 
-客户端：设置 → 关于 → 点击顶部图标/名称/版本身份区，进入页面自动检查。release 冷启动每日检查一次，debug 不自动弹更新。
+客户端：更新检查固定指向本仓库 `xu-bu/bdFun`（发布源常量在 `core:domain/update/UpdateSources.kt`），
+旧上游 `QxTeak/bdFun` 的下载链接仍被兼容，避免历史 Release 失效。设置 → 关于 → 点击顶部图标/名称/版本身份区，
+进入页面自动检查。release 冷启动每日检查一次，debug 不自动弹更新。
 preview 安装检查 preview 与正式版；正式安装只检查正式版；按 versionCode 比较，
 更新比较忽略无效标签、draft 与 debug APK（旧标签仍在历史列表展示）；多 APK 时使用发布页面避免选错架构。
 无更新时显示当前版本日志，底部并列 primary / 中性柔光玻璃按钮及渐进遮罩；更新日志页展示各版本日志。
