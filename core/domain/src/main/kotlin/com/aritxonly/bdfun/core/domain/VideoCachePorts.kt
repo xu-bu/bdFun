@@ -2,8 +2,13 @@ package com.aritxonly.bdfun.core.domain
 
 import com.aritxonly.bdfun.core.common.Outcome
 import com.aritxonly.bdfun.core.model.cache.*
+import com.aritxonly.bdfun.core.model.video.DanmakuItem
 
 interface VideoCacheStorage {
+    /** 缓存时一并保存的弹幕（离线播放用）；条目目录已被删除时不得重新创建。默认不保存。 */
+    fun writeDanmaku(id: String, items: List<DanmakuItem>) {}
+    /** 没有弹幕文件（旧缓存或保存失败）返回 null，调用方再联网加载。 */
+    fun readDanmaku(id: String): List<DanmakuItem>? = null
     fun read(): List<CachedVideo>
     fun write(entries: List<CachedVideo>)
     fun prepare(id: String): CacheDestination

@@ -46,6 +46,13 @@ class VideoDetailStateHolder(
         mutableState.value = VideoDetailReadState(detail, related.toList(), playInfo, danmaku.toList(), loading = false)
     }
 
+    /** 离线缓存没有弹幕文件（旧缓存）时联网补弹幕；失败保持空列表，换视频/分 P 后迟到的结果丢弃。 */
+    suspend fun reloadDanmaku(cid: Long, durationSec: Int) {
+        val version = ++danmakuRevision
+        val comments = playback.danmaku(cid, durationSec).valueOr(emptyList())
+        if (version == danmakuRevision) mutableState.update { it.copy(danmaku = comments) }
+    }
+
     fun appendDanmaku(item: DanmakuItem) {
         mutableState.update { it.copy(danmaku = it.danmaku + item) }
     }

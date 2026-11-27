@@ -52,6 +52,9 @@ internal open class CacheFilesFake : VideoCacheStorage {
     val written = mutableListOf<List<CachedVideo>>()
     val events = mutableListOf<String>()
     override fun read() = restored
+    val danmaku = HashMap<String, List<com.aritxonly.bdfun.core.model.video.DanmakuItem>>()
+    override fun writeDanmaku(id: String, items: List<com.aritxonly.bdfun.core.model.video.DanmakuItem>) { danmaku[id] = items }
+    override fun readDanmaku(id: String) = danmaku[id]
     override fun write(entries: List<CachedVideo>) { written += entries.toList() }
     override fun prepare(id: String) = CacheDestination(id, "$id/video.part", "$id/audio.part", "$id/video.m4s", "$id/audio.m4s", "$id/cover.jpg")
     override fun delete(id: String) { events += "delete:$id"; sizes.keys.removeAll { it.startsWith("$id/") } }

@@ -201,4 +201,30 @@ class DownloadQueueStateHolderTest {
         assertFalse(queue.enqueue(cacheDetail(), cacheQuality(), 8, "audio", 12))
         assertFalse(queue.items.any { it.status == CacheStatus.Failed })
     }
+
+    private val sampleDanmaku = listOf(com.aritxonly.bdfun.core.model.video.DanmakuItem(1_000L, 1, 0xFFFFFF, 25f, "前排"))
+
+    @Test fun cachingAlsoSavesDanmakuForOfflinePlayback() = runBlocking {
+        val files = CacheFilesFake(); val transfer = CacheTransferFake(files)
+        val queue = cacheQueue(files, transfer); queue.initialize()
+        val requested = mutableListOf<Pair<Long, Int>>()
+        queue.setDanmakuSource { cid, duration -> requested += cid to duration; sampleDanmaku }
+        assertTrue(queue.enqueue(cacheDetail(), cacheQuality(), 7, "audio", 12))
+        val entry = queue.items.single()
+        assertEquals(listOf(7L to 12), requested)
+        assertEquals(sampleDanmaku, queue.danmaku(entry))
+        queue.close()
+    }
+
+    @Test fun danmakuArrivingAfterDeleteIsNotWritten() = runBlocking {
+        val files = CacheFilesFake(); val transfer = CacheTransferFake(files)
+        val queue = cacheQueue(files, transfer); queue.initialize()
+        val gate = CompletableDeferred<Unit>()
+        queue.setDanmakuSource { _, _ -> gate.await(); sampleDanmaku }
+        assertTrue(queue.enqueue(cacheDetail(), cacheQuality(), 7, "audio", 12))
+        val id = queue.items.single().id
+        queue.delete(id); gate.complete(Unit)
+        assertNull(files.danmaku[id])
+        queue.close()
+    }
 }

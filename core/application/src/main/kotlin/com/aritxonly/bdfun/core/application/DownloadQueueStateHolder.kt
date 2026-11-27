@@ -26,6 +26,10 @@ class DownloadQueueStateHolder(private val storage: VideoCacheStorage, transfer:
     fun setRetryResolver(resolver: suspend (CachedVideo) -> Outcome<CacheRetryUrls>) {
         retryResolver = resolver
     }
+    /** 缓存时一并拉弹幕的来源（app 层注入）；未注入或失败时离线播放退回联网加载弹幕。 */
+    private var danmakuSource: (suspend (cid: Long, durationSec: Int) -> List<DanmakuItem>?)? = null
+    fun setDanmakuSource(source: suspend (cid: Long, durationSec: Int) -> List<DanmakuItem>?) { danmakuSource = source }
+    fun danmaku(entry: CachedVideo): List<DanmakuItem>? = storage.readDanmaku(entry.id)
 
     private val mutable = MutableStateFlow<List<CachedVideo>>(emptyList())
     val state = mutable.asStateFlow()
@@ -84,7 +88,16 @@ class DownloadQueueStateHolder(private val storage: VideoCacheStorage, transfer:
         val job = scope.launch(start = CoroutineStart.LAZY) { run(CacheDownloadRequest(entry, quality.videoUrl, audioUrl, destination), token) }
         jobs[id] = job
         job.start()
+        saveDanmaku(id, cid, durationSec)
         return true
+    }
+    private fun saveDanmaku(id: String, cid: Long, durationSec: Int) {
+        val source = danmakuSource ?: return
+        scope.launch {
+            val loaded = try { source(cid, durationSec) } catch (e: CancellationException) { throw e } catch (e: Exception) { null }
+            // 删除后不再写回；writeDanmaku 也不会重建已删除的目录。
+            if (!loaded.isNullOrEmpty() && !closed && items.any { it.id == id }) storage.writeDanmaku(id, loaded)
+        }
     }
     /**
      * 重试失败项：重新解析直链后从已有 .part 断点续传。返回 false 表示不可重试（解析器缺失/条目不存在/非失败态）。
@@ -126,6 +139,7 @@ class DownloadQueueStateHolder(private val storage: VideoCacheStorage, transfer:
         }
         jobs[id] = job
         job.start()
+        if (storage.readDanmaku(id) == null) saveDanmaku(id, entry.cid, entry.durationSec)
         return true
     }
 

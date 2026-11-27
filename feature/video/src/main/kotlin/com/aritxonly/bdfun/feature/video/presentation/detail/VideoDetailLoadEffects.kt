@@ -28,8 +28,11 @@ fun LoadInitialVideo(
                 "source=offline bvid=${video.bvid} qualities=${offlinePlay.qualities.size} " +
                     "audio=${offlinePlay.audioUrl != null}",
             )
-            detailController.restore(ports.downloads().detail(offline), offlinePlay, emptyList(), emptyList())
+            // 弹幕：优先用缓存时保存的文件；旧缓存没有文件时联网补（原来这里直接给空列表，离线视频永远没弹幕）。
+            val savedDanmaku = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { ports.downloads().danmaku(offline) }
+            detailController.restore(ports.downloads().detail(offline), offlinePlay, savedDanmaku.orEmpty(), emptyList())
             selectionController.restoreCid(offline.cid, video.cid)
+            if (savedDanmaku == null) detailController.reloadDanmaku(offline.cid, offline.durationSec)
             return@LaunchedEffect
         }
         // 从相关推荐点进去再返回：直接用缓存，不再重新请求

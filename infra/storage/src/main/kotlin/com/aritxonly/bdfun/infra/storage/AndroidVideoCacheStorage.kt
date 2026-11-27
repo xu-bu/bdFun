@@ -20,6 +20,15 @@ class AndroidVideoCacheStorage(context: Context) : VideoCacheStorage {
             File(dir, "video.m4s").absolutePath, File(dir, "audio.m4s").absolutePath, File(dir, "cover.jpg").absolutePath)
     }
     override fun delete(id: String) { File(cacheRoot(), id).deleteRecursively() }
+    override fun writeDanmaku(id: String, items: List<com.aritxonly.bdfun.core.model.video.DanmakuItem>) {
+        // 只写进已存在的条目目录：条目在拉弹幕期间被删除时不重建目录。
+        val dir = File(cacheRoot(), id).takeIf { it.isDirectory } ?: return
+        runCatching { File(dir, "danmaku.json").writeText(encodeCachedDanmaku(items)) }
+    }
+    override fun readDanmaku(id: String): List<com.aritxonly.bdfun.core.model.video.DanmakuItem>? {
+        val file = File(File(cacheRoot(), id), "danmaku.json").takeIf { it.isFile } ?: return null
+        return runCatching { file.readText() }.getOrNull()?.let(::decodeCachedDanmaku)
+    }
     override fun exists(path: String) = File(path).exists()
     override fun uri(path: String) = Uri.fromFile(File(path)).toString()
     override fun size(path: String) = File(path).length()
