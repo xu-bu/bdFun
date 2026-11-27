@@ -24,7 +24,7 @@ internal fun VideoActivityContent(
     val alpha = rememberManualProgress(if (fullscreen) 0f else 1f, 200f)
     val commentRequest = remember { Triple(route?.commentRoot ?: 0L, route?.commentTarget ?: 0L, route?.seekMs ?: 0L) }
     val pager = androidx.compose.foundation.pager.rememberPagerState(
-        initialPage = if (commentRequest.first > 0L) 1 else 0, pageCount = { 2 },
+        initialPage = if (commentRequest.first > 0L) 1 else 0, pageCount = { 3 },
     )
     val scope = rememberCoroutineScope()
     val screenWidthDp = androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp

@@ -45,6 +45,7 @@ fun androidx.compose.foundation.layout.BoxScope.VideoDetailPager(
     collapseConnection: NestedScrollConnection, metadata: @Composable () -> Unit,
     tail: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
     comments: @Composable (androidx.compose.ui.unit.Dp) -> Unit,
+    danmaku: @Composable (androidx.compose.ui.unit.Dp) -> Unit = {},
 ) {
     val colors = MiuixTheme.colorScheme
     val fullscreen = state.fullscreen
@@ -86,7 +87,8 @@ fun androidx.compose.foundation.layout.BoxScope.VideoDetailPager(
                 .graphicsLayer { alpha = if (fullscreen || pictureInPicture) 0f else 1f }
                 .blockTouches(fullscreen || pictureInPicture),
         ) {
-            VideoDetailPagerContent(state, pager, collapseConnection, listState, metadata, tail, comments, maxWidth)
+            VideoDetailPagerContent(state, pager, collapseConnection, listState,
+                VideoDetailPages(metadata, tail, comments, danmaku), maxWidth)
         }
     }
 
@@ -97,8 +99,7 @@ fun androidx.compose.foundation.layout.BoxScope.VideoDetailPager(
 private fun VideoDetailPagerContent(
     state: VideoDetailPaneState, pager: androidx.compose.foundation.pager.PagerState,
     collapseConnection: NestedScrollConnection, listState: androidx.compose.foundation.lazy.LazyListState,
-    metadata: @Composable () -> Unit, tail: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
-    comments: @Composable (Dp) -> Unit, commentsWidth: Dp,
+    pages: VideoDetailPages, commentsWidth: Dp,
 ) {
     val splitPanes = state.splitPanes
     val statusBarTop = state.statusBarTop
@@ -107,27 +108,31 @@ private fun VideoDetailPagerContent(
         state = pager,
         // 两页都保持 compose：切到简介再回来，评论列表不重载
         beyondViewportPageCount = 1,
-        // 只有两页：到边后再往外滑不要任何回弹动画
+        // 到边后再往外滑不要任何回弹动画
         overscrollEffect = null,
         // 允许左右滑动；tab 直接读 pager.currentPage，会跟着一起动
         modifier = Modifier
             .fillMaxSize()
             .nestedScroll(collapseConnection),
     ) { page ->
-        if (page == 0) {
-            LazyColumn(
+        val topInset = (if (splitPanes) statusBarTop else playerBlockHeight) + 52.dp
+        // 0 简介 / 1 评论 / 2 弹幕：评论保持在 1，原有「评论页可见」判断不变。
+        when (page) {
+            0 -> LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    top = (if (splitPanes) statusBarTop else playerBlockHeight) + 52.dp,
-                    bottom = 32.dp,
-                ),
+                contentPadding = PaddingValues(top = topInset, bottom = 32.dp),
             ) {
-                item(key = "meta") { metadata() }
-                tail()
+                item(key = "meta") { pages.metadata() }
+                pages.tail(this)
             }
-        } else {
-            comments(commentsWidth)
+            1 -> pages.comments(commentsWidth)
+            else -> pages.danmaku(topInset)
         }
     }
 }
+
+private class VideoDetailPages(
+    val metadata: @Composable () -> Unit, val tail: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
+    val comments: @Composable (Dp) -> Unit, val danmaku: @Composable (Dp) -> Unit,
+)

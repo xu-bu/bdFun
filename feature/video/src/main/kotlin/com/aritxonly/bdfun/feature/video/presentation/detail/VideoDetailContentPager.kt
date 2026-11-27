@@ -37,6 +37,7 @@ fun androidx.compose.foundation.layout.BoxScope.VideoDetailContentPager(
         comments = { paneWidth ->
             VideoScreenComments(request, presentation, pager, inlineLayout, pageUi, content, paneWidth, slots)
         },
+        danmaku = { topInset -> slots.danmaku(VideoDanmakuPane(content.read.danmaku, topInset)) },
     )
 }
 

@@ -59,7 +59,7 @@ fun androidx.compose.foundation.layout.BoxScope.VideoPageTabs(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             TeakPagerTabs(
-                options = listOf("简介", "评论"), selected = pager.currentPage,
+                options = listOf("简介", "评论", "弹幕"), selected = pager.currentPage,
                 onSelect = onSelect,
                 itemWidth = if (splitPanes) 48.dp else 60.dp,
                 flatBackgroundColor = com.aritxonly.teak.common.theme.LocalTeakContentColors.current.groupedBackground,

@@ -33,6 +33,7 @@ internal fun androidx.compose.foundation.layout.BoxScope.VideoScreenPager(
             tail = rememberVideoDetailTailSlots(), comments = { pane ->
                 VideoScreenComments(pane, scrollTop = pager.currentPage == 1)
             },
+            danmaku = { pane -> VideoDanmakuList(pane) },
         ))
 }
 
