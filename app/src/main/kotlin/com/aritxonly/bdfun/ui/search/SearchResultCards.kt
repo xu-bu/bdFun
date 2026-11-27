@@ -98,7 +98,7 @@ internal fun SearchResultRow(
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        SearchVideoCover(video, coverWidth, coverHeight) { enqueueVideoCache(context, scope, video) }
+        SearchVideoCover(video, coverWidth, coverHeight)
         Spacer(Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f).height(coverHeight)) {
             Text(
@@ -141,7 +141,10 @@ internal fun SearchResultRow(
                     fontSize = 11.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
                 )
+                // 右下角：稍后再看 / 缓存（原来缓存按钮盖在封面右上角）
+                VideoCardActionButtons(video, { enqueueVideoCache(context, scope, video) })
             }
         }
     }
@@ -150,7 +153,6 @@ internal fun SearchResultRow(
 @Composable
 private fun SearchVideoCover(
     video: VideoItem, coverWidth: androidx.compose.ui.unit.Dp, coverHeight: androidx.compose.ui.unit.Dp,
-    onCache: () -> Unit,
 ) {
     val colors = MiuixTheme.colorScheme
     Box(
@@ -178,6 +180,5 @@ private fun SearchVideoCover(
             )
         }
         WatchProgressBar(video.bvid)
-        VideoCacheButton(onCache)
     }
 }

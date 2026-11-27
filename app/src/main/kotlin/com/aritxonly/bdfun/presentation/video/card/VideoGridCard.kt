@@ -27,7 +27,7 @@ internal fun VideoGridCard(
     showOwner: Boolean = true,
     /** 首页推荐下点击 UP 名不跳转空间页。 */
     ownerClickEnabled: Boolean = true,
-    /** 非空时在封面右上角显示缓存按钮。 */
+    /** 非空时在信息区右下角显示「稍后再看 / 缓存」按钮（批量管理时隐藏）。 */
     onCacheVideo: ((VideoItem) -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
 ) {
@@ -39,7 +39,7 @@ internal fun VideoGridCard(
             .background(colors.surfaceContainer)
             .combinedClickable(interactionSource = null, indication = null, onClick = onClick, onLongClick = onLongClick),
     ) {
-        GridVideoCover(video, progress, selectionEnabled, selected, reserveMeta, onCacheVideo)
-        GridVideoContent(video, showOwner, ownerClickEnabled)
+        GridVideoCover(video, progress, selectionEnabled, selected, reserveMeta)
+        GridVideoContent(video, showOwner, ownerClickEnabled, onCacheVideo.takeUnless { selectionEnabled })
     }
 }

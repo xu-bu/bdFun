@@ -70,6 +70,8 @@ object AppGraph {
         get() = checkNotNull(container) { "AppGraph 尚未初始化" }.castAccessKey
     internal val videoRepositoryForCast: com.aritxonly.bdfun.core.domain.VideoRepository
         get() = checkNotNull(container) { "AppGraph 尚未初始化" }.videoRepository
+    internal val videoActionsRepository: com.aritxonly.bdfun.core.domain.VideoActionsRepository
+        get() = checkNotNull(container) { "AppGraph 尚未初始化" }.videoActionsRepository
     internal val videoPlaybackRepositoryForCast: com.aritxonly.bdfun.core.domain.VideoPlaybackRepository
         get() = checkNotNull(container) { "AppGraph 尚未初始化" }.videoPlaybackRepository
     /** 进程级投屏会话，视频页与扫描页共用同一个实例。 */

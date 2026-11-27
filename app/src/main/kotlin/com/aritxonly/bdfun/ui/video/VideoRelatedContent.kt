@@ -27,7 +27,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 internal fun VideoRelatedCover(
     item: VideoItem, coverWidth: androidx.compose.ui.unit.Dp, coverHeight: androidx.compose.ui.unit.Dp,
-    onCacheVideo: ((VideoItem) -> Unit)? = null,
 ) {
     val colors = MiuixTheme.colorScheme
     Box(
@@ -43,7 +42,6 @@ internal fun VideoRelatedCover(
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize(),
         )
-        if (onCacheVideo != null) VideoCacheButton { onCacheVideo(item) }
         // 时长直接压在封面上，不加任何背景
         if (item.duration > 0) {
             Text(
@@ -63,6 +61,7 @@ internal fun VideoRelatedCover(
 @Composable
 internal fun VideoRelatedMetadata(
     item: VideoItem, metaLabel: String?, coverHeight: androidx.compose.ui.unit.Dp, modifier: Modifier,
+    onCacheVideo: ((VideoItem) -> Unit)? = null,
 ) {
     val colors = MiuixTheme.colorScheme
     Column(
@@ -98,16 +97,17 @@ internal fun VideoRelatedMetadata(
             )
         }
         Spacer(Modifier.weight(1f))
-        if (metaLabel != null) {
-            Text(
-                text = metaLabel,
-                color = colors.onBackgroundVariant,
-                fontSize = 11.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        } else {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (metaLabel != null) {
+                Text(
+                    text = metaLabel,
+                    color = colors.onBackgroundVariant,
+                    fontSize = 11.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+            } else {
                 UpBadge()
                 Spacer(Modifier.width(5.dp))
                 Text(
@@ -116,8 +116,10 @@ internal fun VideoRelatedMetadata(
                     fontSize = 11.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
                 )
             }
+            if (onCacheVideo != null) VideoCardActionButtons(item, { onCacheVideo(item) })
         }
     }
 }

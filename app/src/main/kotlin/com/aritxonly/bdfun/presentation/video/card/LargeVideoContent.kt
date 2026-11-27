@@ -22,7 +22,7 @@ import com.aritxonly.bdfun.core.model.video.VideoItem
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun LargeVideoContent(video: VideoItem, ownerClickEnabled: Boolean = true) {
+internal fun LargeVideoContent(video: VideoItem, ownerClickEnabled: Boolean = true, onCacheVideo: ((VideoItem) -> Unit)? = null) {
     val colors = MiuixTheme.colorScheme
     val context = LocalContext.current
 
@@ -55,6 +55,7 @@ internal fun LargeVideoContent(video: VideoItem, ownerClickEnabled: Boolean = tr
                         if (ownerClickEnabled) navigateToSpace(context, video.ownerMid)
                     },
             )
+            if (onCacheVideo != null) VideoCardActionButtons(video, { onCacheVideo(video) })
         }
     }
 }

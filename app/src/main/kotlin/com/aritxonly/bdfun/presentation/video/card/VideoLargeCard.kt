@@ -21,7 +21,7 @@ internal fun VideoLargeCard(
     progress: Float = 0f,
     /** 首页推荐下点击 UP 名不跳转空间页。 */
     ownerClickEnabled: Boolean = true,
-    /** 非空时在封面右上角显示缓存按钮。 */
+    /** 非空时在信息区右下角显示「稍后再看 / 缓存」按钮。 */
     onCacheVideo: ((VideoItem) -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
 ) {
@@ -33,7 +33,7 @@ internal fun VideoLargeCard(
             .background(colors.surfaceContainer)
             .combinedClickable(interactionSource = null, indication = null, onClick = onClick, onLongClick = onLongClick),
     ) {
-        LargeVideoCover(video, progress, onCacheVideo)
-        LargeVideoContent(video, ownerClickEnabled)
+        LargeVideoCover(video, progress)
+        LargeVideoContent(video, ownerClickEnabled, onCacheVideo)
     }
 }

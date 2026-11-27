@@ -71,23 +71,6 @@ internal fun FeedVideoCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             FeedVideoCollectionBadge(isCollection)
-            if (onCacheVideo != null) {
-                Box(
-                    modifier = Modifier
-                        .size(30.dp)
-                        .clip(Capsule())
-                        .background(colors.primary.copy(alpha = 0.92f))
-                        .clickable(interactionSource = null, indication = null) { onCacheVideo(video) },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Download,
-                        contentDescription = "缓存",
-                        modifier = Modifier.size(18.dp),
-                        tint = Color.White,
-                    )
-                }
-            }
         }
         Box(
             modifier = Modifier
@@ -103,14 +86,18 @@ internal fun FeedVideoCard(
         FeedVideoMetrics(video, muted, onToggleMute)
         WatchProgressBar(video.bvid)
     }
-    Text(
-        text = video.title,
-        color = colors.onBackground,
-        fontSize = 14.sp,
-        lineHeight = 19.sp,
-        fontWeight = FontWeight.Normal,
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.padding(top = 8.dp),
-    )
+    // 稍后再看 / 缓存放在标题右侧底部，不再盖在封面上。
+    Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.Bottom) {
+        Text(
+            text = video.title,
+            color = colors.onBackground,
+            fontSize = 14.sp,
+            lineHeight = 19.sp,
+            fontWeight = FontWeight.Normal,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        if (onCacheVideo != null) VideoCardActionButtons(video, { onCacheVideo(video) })
+    }
 }

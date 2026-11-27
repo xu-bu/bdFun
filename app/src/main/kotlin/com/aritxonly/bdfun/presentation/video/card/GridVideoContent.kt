@@ -4,6 +4,7 @@ import com.aritxonly.bdfun.navigateToSpace
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,7 +29,9 @@ import com.kyant.shapes.Capsule
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
-internal fun GridVideoContent(video: VideoItem, showOwner: Boolean, ownerClickEnabled: Boolean = true) {
+internal fun GridVideoContent(
+    video: VideoItem, showOwner: Boolean, ownerClickEnabled: Boolean = true, onCacheVideo: ((VideoItem) -> Unit)? = null,
+) {
     val colors = MiuixTheme.colorScheme
     val context = LocalContext.current
 
@@ -51,11 +54,13 @@ internal fun GridVideoContent(video: VideoItem, showOwner: Boolean, ownerClickEn
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 // UP 名称默认可点进空间页；首页推荐下禁用跳转，但保留空点击消费事件，避免穿透到整卡进视频。
                 Row(
                     modifier = Modifier
+                        .weight(1f, fill = false)
                         .clip(Capsule())
                         .clickable(interactionSource = null, indication = null) {
                             if (ownerClickEnabled) navigateToSpace(context, video.ownerMid)
@@ -77,6 +82,11 @@ internal fun GridVideoContent(video: VideoItem, showOwner: Boolean, ownerClickEn
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
+                if (onCacheVideo != null) VideoCardActionButtons(video, { onCacheVideo(video) })
+            }
+        } else if (onCacheVideo != null) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                VideoCardActionButtons(video, { onCacheVideo(video) })
             }
         }
     }
