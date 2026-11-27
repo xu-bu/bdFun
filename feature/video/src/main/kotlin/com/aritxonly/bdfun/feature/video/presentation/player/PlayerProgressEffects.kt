@@ -41,6 +41,8 @@ fun BindPlayerProgressTracking(
             val playing = tick.playing
             val ended = tick.ended
             page.danmakuProgressMs = positionMs
+            ui.progressPositionMs.longValue = positionMs
+            ui.progressDurationMs.longValue = durationMs
             // 上报官方历史记录：首次 3 秒后，之后每 15 秒一次；播放结束时补一次
             val now = System.currentTimeMillis()
             if (now - lastProgressSaveAt >= 10_000L) {

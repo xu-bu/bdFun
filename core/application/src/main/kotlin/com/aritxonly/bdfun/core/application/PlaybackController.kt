@@ -21,6 +21,11 @@ data class PlaybackSource(
 interface PlaybackController {
     val state: StateFlow<PlaybackSnapshot>
     fun refresh(): PlaybackSnapshot
+    /**
+     * 只读当前播放位置：不采样缓冲统计、不发布状态。
+     * 给弹幕时钟这类每帧读取用；refresh() 每次都会发布新位置，界面里读位置的地方会跟着整块重组。
+     */
+    fun currentPositionMs(): Long = state.value.positionMs
     fun prepare(source: PlaybackSource)
     fun play()
     fun pause()

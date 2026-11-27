@@ -49,6 +49,8 @@ class MediaPlaybackSession(
     private val manager =
         context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private var lastNotifyAt = 0L
+    private var lastNotifiedDuration = -1L
+    private var lastNotifiedSpeed = -1f
     private var lastPlaying: Boolean? = null
     private var released = false
     private var artwork: android.graphics.Bitmap? = null
@@ -232,11 +234,14 @@ class MediaPlaybackSession(
                 .build(),
         )
         lastPosition = positionMs
-        val now = System.currentTimeMillis()
-        val playingChanged = lastPlaying != playing
-        if (!playingChanged && now - lastNotifyAt < 1000L) return
+        // 通知只在显示内容变化时重建（播放/暂停、总长、倍速）：进度条由系统按 PlaybackState 推算。
+        // 原来每秒带封面位图重建一次，主线程跨进程传图会造成周期性的短暂卡顿。
+        val changed = lastPlaying != playing || durationMs != lastNotifiedDuration || speed != lastNotifiedSpeed
+        if (!changed) return
         lastPlaying = playing
-        lastNotifyAt = now
+        lastNotifiedDuration = durationMs
+        lastNotifiedSpeed = speed
+        lastNotifyAt = System.currentTimeMillis()
         notifyState(playing, positionMs, durationMs)
     }
 

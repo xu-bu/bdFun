@@ -37,12 +37,11 @@ fun PlayerSurface(
 ) {
     val state = playback.state.collectAsState()
     val playing by remember(playback) { derivedStateOf { state.value.playing } }
-    val positionMs by remember(playback) { derivedStateOf { state.value.positionMs } }
-    val durationMs by remember(playback) { derivedStateOf { state.value.durationMs } }
+    // 不在这里读位置/弹幕帧时间：它们每秒变化数次到 60 次，读了整个画面层都会跟着重组。
+    // 弹幕在自己的时钟回调里读 frameMs，常显进度条在绘制阶段读。
     var playerViewRef by ui.playerViewRef
     val fullscreen = presentation.fullscreen
     val danmaku = media.danmaku
-    val frameMs by ui.frameMs
     val boosting by ui.boosting
     val boostSpeed by ui.boostSpeed
     val speed by ui.speed
@@ -59,11 +58,11 @@ fun PlayerSurface(
         if (danmakuVisible) {
             val hot = if (picture.hotDanmakuEnabled && !ui.fsAudioOnly.value) ui.danmakuHit.hotPresentation.value
                 else HotDanmakuPresentation()
-            slots.danmaku(danmaku, { frameMs - btLatencyMs }, playing,
+            slots.danmaku(danmaku, { ui.frameMs.longValue - btLatencyMs }, playing,
                 if (boosting) boostSpeed else speed, Modifier.fillMaxSize(), fullscreen, hot, ui.danmakuHit)
         }
 
-        PlayerAlwaysProgress(ui, fullscreen, positionMs, durationMs, picture.progressBarMode, picture.accentColor)
+        PlayerAlwaysProgress(ui, fullscreen, picture.progressBarMode, picture.accentColor)
         PlayerHotDanmakuOverlay(ui, fullscreen, picture, danmakuVisible)
         if (sponsor != null) {
             PlayerSponsorOverlay(sponsor, fullscreen, picture.accentColor) { segment ->
