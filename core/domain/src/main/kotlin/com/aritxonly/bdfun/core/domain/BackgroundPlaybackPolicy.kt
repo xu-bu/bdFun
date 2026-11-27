@@ -19,3 +19,11 @@ fun shouldEnterPipOnExit(
     /** 加载完成后会自动开播；加载中退出时用它代替尚未生效的 playWhenReady。 */
     autoPlay: Boolean = false,
 ): Boolean = showDiscAfterVideo && exitControlIsPip && (playWhenReady || (stillLoading && autoPlay))
+
+/**
+ * 视频页不可见（锁屏、回桌面）时是否只加载音频：继续在后台播放才有意义；
+ * 用户已手动开了「听视频」时视频轨本来就关着，不由这里接管，回到前台也不要替用户打开画面。
+ * 画中画小窗仍然可见、不会走到不可见状态，所以不受影响。
+ */
+fun shouldUseAudioOnlyWhileHidden(backgroundPlay: Boolean, manualAudioOnly: Boolean): Boolean =
+    backgroundPlay && !manualAudioOnly

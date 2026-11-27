@@ -30,6 +30,14 @@ class BackgroundPlaybackPolicyTest {
         assertFalse(shouldEnterPipOnExit(true, false, true))
     }
 
+    @Test fun hiddenPageLoadsAudioOnlyWhenPlaybackContinues() {
+        assertTrue(shouldUseAudioOnlyWhileHidden(backgroundPlay = true, manualAudioOnly = false))
+        // 后台不播放：页面隐藏时本来就暂停，不用改视频轨。
+        assertFalse(shouldUseAudioOnlyWhileHidden(backgroundPlay = false, manualAudioOnly = false))
+        // 已手动听视频：视频轨已关，回前台也不能替用户打开画面。
+        assertFalse(shouldUseAudioOnlyWhileHidden(backgroundPlay = true, manualAudioOnly = true))
+    }
+
     @Test fun loadingVideoEntersPipWhenItWillAutoPlay() {
         // 详情/播放地址还在加载时播放器空闲、playWhenReady 为默认 false，不能当成用户暂停。
         assertTrue(shouldEnterPipOnExit(true, true, false, stillLoading = true, autoPlay = true))

@@ -22,6 +22,7 @@ fun BindPlayerInitialEffects(
     var usingFallback by ui.usingFallback
     var usingOriginal by ui.usingOriginal
     BindPlayerLifecycle(playback, ui, ports.page, ports.settings.backgroundPlay)
+    BindPlayerHiddenAudioOnly(playback, ui, ports.settings.backgroundPlay)
     BindPlayerBuffering(playback, ui)
     LaunchedEffect(info, quality) {
         usingFallback = false
