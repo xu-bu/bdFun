@@ -16,26 +16,26 @@ class CacheQualitySelectorTest {
         acceptQuality = qualities.map { it.id },
     )
 
-    @Test fun preferredQualityWins() {
-        val first = quality(80)
-        val preferred = quality(64)
-        assertEquals(preferred, selectCacheQuality(info(first, preferred), 64))
+    @Test fun picksHighestQualityRegardlessOfPlayback() {
+        // qualities 由 PlayInfoMapper 按 qn 降序产出；缓存固定取最高档，不看当前播放清晰度。
+        val highest = quality(120)
+        assertEquals(highest, selectCacheQuality(info(highest, quality(80), quality(64))))
     }
 
-    @Test fun fallsBackTo720pThenLastQuality() {
-        val last = quality(32)
-        val p720 = quality(64)
-        assertEquals(p720, selectCacheQuality(info(last, p720), 999))
-        assertEquals(last, selectCacheQuality(info(last), 999))
+    @Test fun skipsHighestWithBlankUrlAndTakesNext() {
+        val next = quality(80)
+        assertEquals(next, selectCacheQuality(info(quality(120, ""), next, quality(64))))
     }
 
-    @Test fun blankVideoUrlUsesFallback() {
-        val selected = selectCacheQuality(info(quality(64, ""), fallback = "fallback-url"), 64)
+    @Test fun allBlankUsesHighestWithFallbackUrl() {
+        val highest = quality(120, "")
+        val selected = selectCacheQuality(info(highest, quality(80, ""), fallback = "fallback-url"))
+        assertEquals(highest.id, selected?.id)
         assertEquals("fallback-url", selected?.videoUrl)
     }
 
     @Test fun noUsableUrlOrQualityReturnsNull() {
-        assertNull(selectCacheQuality(info(), 64))
-        assertNull(selectCacheQuality(info(quality(64, "")), 64))
+        assertNull(selectCacheQuality(info()))
+        assertNull(selectCacheQuality(info(quality(64, ""))))
     }
 }

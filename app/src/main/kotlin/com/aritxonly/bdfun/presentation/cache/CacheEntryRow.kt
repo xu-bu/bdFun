@@ -1,51 +1,63 @@
 package com.aritxonly.bdfun.ui
 
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.aritxonly.bdfun.core.application.DownloadQueueStateHolder
-import com.aritxonly.bdfun.core.model.cache.CachedVideo
+import com.aritxonly.bdfun.core.model.cache.CacheStatus
+import com.aritxonly.bdfun.core.model.video.VideoItem
 import com.aritxonly.teak.common.settings.TeakSettingsCard
+import top.yukonga.miuix.kmp.basic.Checkbox
+import androidx.compose.ui.state.ToggleableState
 
-/** 单条缓存：左滑进入管理模式（露出删除），点内容区收起或直接播放。 */
+/**
+ * 单条缓存：长按进入管理模式；管理模式下点击=勾选，普通模式点击=播放。
+ * 点击事件放在最外层，避免与内部「详情/重试」按钮的点击混淆。
+ */
 @Composable
 internal fun CacheEntryRow(
-    entry: CachedVideo,
+    entry: com.aritxonly.bdfun.core.model.cache.CachedVideo,
     queue: DownloadQueueStateHolder,
-    revealed: Boolean,
-    onReveal: () -> Unit,
-    onCollapse: () -> Unit,
-    onOpen: (com.aritxonly.bdfun.core.model.video.VideoItem) -> Unit,
+    manageMode: Boolean,
+    selected: Boolean,
+    onEnterManage: () -> Unit,
+    onToggleSelect: () -> Unit,
+    onOpen: (VideoItem) -> Unit,
     onOpenDetail: (String) -> Unit,
 ) {
     val context = LocalContext.current
     val oneTake = rememberOneTakeAnchor()
     val cacheRadiusPx = with(LocalDensity.current) { 16.dp.toPx() }
-    CacheSwipeRow(
-        isRevealed = revealed,
-        onReveal = onReveal,
-        onCollapse = onCollapse,
-        onDelete = {
-            onCollapse()
-            queue.delete(entry.id)
-            context.showToast("已删除缓存")
-        },
-        modifier = Modifier.padding(bottom = 10.dp).then(oneTake.modifier),
+    Box(
+        modifier = Modifier
+            .padding(bottom = 10.dp)
+            .then(oneTake.modifier)
+            .combinedClickable(
+                interactionSource = null,
+                indication = null,
+                onClick = {
+                    when {
+                        manageMode -> onToggleSelect()
+                        entry.status != CacheStatus.Completed -> Unit
+                        else -> oneTake.open(
+                            context = context,
+                            video = queue.video(entry),
+                            radiusPx = cacheRadiusPx,
+                        ) { onOpen(queue.video(entry)) }
+                    }
+                },
+                onLongClick = onEnterManage,
+            ),
     ) {
         TeakSettingsCard {
             CacheRow(
                 entry = entry,
                 cover = queue.cover(entry),
-                onOpen = {
-                    oneTake.open(
-                        context = context,
-                        video = queue.video(entry),
-                        radiusPx = cacheRadiusPx,
-                    ) { onOpen(queue.video(entry)) }
-                },
                 onOpenDetail = {
                     val bvid = entry.bvid
                     if (bvid.isBlank()) {
@@ -58,11 +70,23 @@ internal fun CacheEntryRow(
                     if (queue.retry(entry.id)) {
                         context.showToast("正在重新缓存…")
                     } else {
-                        context.showToast("暂时无法重试，请左滑删除后重新缓存")
+                        context.showToast("暂时无法重试，可进入管理模式删除后重新缓存")
                     }
                 },
-                interactive = !revealed,
+                selection = if (manageMode) {
+                    { CacheSelectCheckbox(selected) }
+                } else {
+                    null
+                },
             )
         }
     }
+}
+
+@Composable
+private fun CacheSelectCheckbox(selected: Boolean) {
+    Checkbox(
+        state = if (selected) ToggleableState.On else ToggleableState.Off,
+        onClick = null,
+    )
 }

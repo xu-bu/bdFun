@@ -137,7 +137,7 @@ class VideoDetailViewActions(
             host.showToast("暂无可用清晰度")
             return
         }
-        val quality = selectCacheQuality(info, qualityId)
+        val quality = selectCacheQuality(info)
         if (quality == null) {
             host.showToast("暂无可用清晰度")
             return

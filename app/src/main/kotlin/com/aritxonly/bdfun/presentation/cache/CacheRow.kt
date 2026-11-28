@@ -1,6 +1,5 @@
 package com.aritxonly.bdfun.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,37 +9,30 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.aritxonly.bdfun.core.model.cache.CacheStatus
 import com.aritxonly.bdfun.core.model.cache.CachedVideo
-import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-
+/** 缓存条目内容：管理模式用勾选框替换右侧操作区，点击由外层统一处理。 */
 @Composable
 internal fun CacheRow(
     entry: CachedVideo,
     cover: String,
-    onOpen: () -> Unit,
     onOpenDetail: () -> Unit,
     onRetry: () -> Unit,
-    interactive: Boolean = true,
+    selection: @Composable (() -> Unit)? = null,
+    actionsEnabled: Boolean = true,
 ) {
-    val colors = MiuixTheme.colorScheme
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(
-                interactionSource = null,
-                indication = null,
-                enabled = interactive && entry.status == CacheStatus.Completed,
-                onClick = onOpen,
-            )
-            .padding(10.dp),
+        modifier = Modifier.fillMaxWidth().padding(10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         CacheCover(cover)
         Spacer(Modifier.width(10.dp))
         CacheRowContent(entry)
         Spacer(Modifier.width(8.dp))
-        CacheRowActions(entry.status, onOpenDetail, onRetry, enabled = interactive)
+        if (selection != null) {
+            selection()
+        } else {
+            CacheRowActions(entry.status, onOpenDetail, onRetry, enabled = actionsEnabled)
+        }
     }
 }

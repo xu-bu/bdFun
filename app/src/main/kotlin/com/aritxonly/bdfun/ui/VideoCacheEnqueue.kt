@@ -47,7 +47,7 @@ internal fun enqueueVideoCache(context: Context, scope: CoroutineScope, video: V
                 return@launch
             }
         }
-        val quality = selectCacheQuality(play, qualityId)
+        val quality = selectCacheQuality(play)
         if (quality == null || play.audioUrl.isNullOrBlank()) {
             context.showToast("该视频暂时无法缓存")
             return@launch
