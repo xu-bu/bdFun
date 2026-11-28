@@ -20,6 +20,7 @@ internal class Media3VideoOutput(context: Context, player: Player) : VideoOutput
         this.player = player
         useController = false
         setShutterBackgroundColor(android.graphics.Color.BLACK)
+        tag = com.aritxonly.bdfun.ui.PIP_SOURCE_TAG
     }
     override var resizeMode: Int
         get() = when (view.resizeMode) {

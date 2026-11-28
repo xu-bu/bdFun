@@ -38,6 +38,15 @@ class BackgroundPlaybackPolicyTest {
         assertFalse(shouldUseAudioOnlyWhileHidden(backgroundPlay = true, manualAudioOnly = true))
     }
 
+    @Test fun bufferingOrEndedVideoDoesNotEnterPipOnExit() {
+        // 缓冲和播完时 playWhenReady 仍为 true，但小窗没有可续播的画面。
+        assertFalse(shouldEnterPipOnExit(true, true, true, buffering = true))
+        assertFalse(shouldEnterPipOnExit(true, true, true, ended = true))
+        assertFalse(shouldEnterPipOnExit(true, true, false, stillLoading = true,
+            autoPlay = true, buffering = true))
+        assertTrue(shouldEnterPipOnExit(true, true, true))
+    }
+
     @Test fun loadingVideoEntersPipWhenItWillAutoPlay() {
         // 详情/播放地址还在加载时播放器空闲、playWhenReady 为默认 false，不能当成用户暂停。
         assertTrue(shouldEnterPipOnExit(true, true, false, stillLoading = true, autoPlay = true))

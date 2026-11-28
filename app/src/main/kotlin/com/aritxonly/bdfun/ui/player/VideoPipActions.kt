@@ -10,10 +10,13 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.drawable.Icon
 import android.util.Rational
+import android.view.View
+import android.view.ViewGroup
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -22,13 +25,17 @@ internal const val ACTION_PIP_REWIND = "com.aritxonly.bdfun.PIP_REWIND"
 internal const val ACTION_PIP_TOGGLE = "com.aritxonly.bdfun.PIP_TOGGLE"
 internal const val ACTION_PIP_FORWARD = "com.aritxonly.bdfun.PIP_FORWARD"
 internal const val PIP_SEEK_MS = 15_000L
+/** 播放器视图标记；画中画靠它找来源矩形，展示层不必依赖 Media3。 */
+internal const val PIP_SOURCE_TAG = "bdfun_pip_source"
 
 /**
  * 视频页进入画中画的参数：后退 15 秒 / 播放暂停 / 前进 15 秒。
  * 提供自定义按钮后系统不再按媒体会话自动生成按钮，所以播放暂停也由这里给出。
  * 设备只允许更少按钮时只保留播放暂停。
  */
-internal fun videoPictureInPictureParams(activity: Activity, playing: Boolean): PictureInPictureParams {
+internal fun videoPictureInPictureParams(
+    activity: Activity, playing: Boolean, sourceRectHint: Rect? = null,
+): PictureInPictureParams {
     val toggle = pipAction(activity, if (playing) "暂停" else "播放", ACTION_PIP_TOGGLE, 21,
         if (playing) pauseIcon() else playIcon())
     val all = listOf(
@@ -37,10 +44,29 @@ internal fun videoPictureInPictureParams(activity: Activity, playing: Boolean): 
         pipAction(activity, "前进 15 秒", ACTION_PIP_FORWARD, 22, seekIcon(forward = true)),
     )
     val max = runCatching { activity.maxNumPictureInPictureActions }.getOrDefault(all.size)
-    return PictureInPictureParams.Builder()
+    val builder = PictureInPictureParams.Builder()
         .setAspectRatio(Rational(16, 9))
         .setActions(if (all.size <= max) all else listOf(toggle))
-        .build()
+        .setSeamlessResizeEnabled(true)
+    if (sourceRectHint != null) builder.setSourceRectHint(sourceRectHint)
+    return builder.build()
+}
+
+/** 从小窗来源 rect 起步，系统才能直接把视频画面搬到角落，否则会先缩窗再盖黑遮罩。 */
+internal fun pipSourceRect(activity: Activity): Rect? {
+    val view = findPlayerView(activity.window?.decorView ?: return null) ?: return null
+    val rect = Rect()
+    return if (view.getGlobalVisibleRect(rect) && !rect.isEmpty) rect else null
+}
+
+private fun findPlayerView(view: View): View? {
+    if (view.tag == PIP_SOURCE_TAG) return view
+    if (view is ViewGroup) {
+        for (index in 0 until view.childCount) {
+            findPlayerView(view.getChildAt(index))?.let { return it }
+        }
+    }
+    return null
 }
 
 private fun pipAction(activity: Activity, title: String, action: String, requestCode: Int, icon: Icon): RemoteAction {

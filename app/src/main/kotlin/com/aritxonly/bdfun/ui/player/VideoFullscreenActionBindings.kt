@@ -159,7 +159,7 @@ internal class VideoFullscreenActionBindings(
         runCatching {
             if (android.os.Build.VERSION.SDK_INT >= 26) {
                 activity?.let {
-                    it.enterPictureInPictureMode(videoPictureInPictureParams(it, playing))
+                    it.enterPictureInPictureMode(videoPictureInPictureParams(it, playing, pipSourceRect(it)))
                 }
             }
         }

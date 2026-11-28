@@ -12,6 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import com.aritxonly.bdfun.core.application.PlaybackPhase
 import com.aritxonly.bdfun.ui.LocalVideoPageState
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
@@ -172,12 +173,15 @@ class VideoActivity : ComponentActivity() {
         // 用户主动暂停后退出不进画中画；playWhenReady=false 表示暂停（缓冲中仍为 true）。
         // 例外：播放源还没准备好时播放器空闲、playWhenReady 仍是默认 false，按自动播放设置判断。
         val snapshot = com.aritxonly.bdfun.ui.BackgroundPlayback.playbackSnapshot
-        val stillLoading = snapshot.phase == com.aritxonly.bdfun.core.application.PlaybackPhase.Idle &&
-            !snapshot.ready && snapshot.error == null
+        val stillLoading = snapshot.phase == PlaybackPhase.Idle && !snapshot.ready && snapshot.error == null
         if (com.aritxonly.bdfun.core.domain.shouldEnterPipOnExit(
-                s.showDiscAfterVideo, s.exitVideoControl == 0, snapshot.playWhenReady, stillLoading, s.autoPlay)) {
+                s.showDiscAfterVideo, s.exitVideoControl == 0, snapshot.playWhenReady,
+                stillLoading, s.autoPlay,
+                buffering = snapshot.phase == PlaybackPhase.Buffering,
+                ended = snapshot.phase == PlaybackPhase.Ended || snapshot.ended)) {
             val ok = runCatching {
-                enterPictureInPictureMode(com.aritxonly.bdfun.ui.videoPictureInPictureParams(this, currentlyPlaying()))
+                enterPictureInPictureMode(com.aritxonly.bdfun.ui.videoPictureInPictureParams(
+                    this, currentlyPlaying(), com.aritxonly.bdfun.ui.pipSourceRect(this)))
             }.getOrDefault(false)
             if (ok) return
         }
@@ -212,7 +216,10 @@ class VideoActivity : ComponentActivity() {
             com.aritxonly.bdfun.ui.BackgroundPlayback.state
                 .map { it.playback.playWhenReady }.distinctUntilChanged()
                 .collect { playing ->
-                    runCatching { setPictureInPictureParams(com.aritxonly.bdfun.ui.videoPictureInPictureParams(this@VideoActivity, playing)) }
+                    runCatching {
+                        setPictureInPictureParams(com.aritxonly.bdfun.ui.videoPictureInPictureParams(
+                            this@VideoActivity, playing, com.aritxonly.bdfun.ui.pipSourceRect(this@VideoActivity)))
+                    }
                 }
         }
     }

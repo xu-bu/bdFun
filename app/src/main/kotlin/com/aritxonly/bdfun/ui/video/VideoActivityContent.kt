@@ -21,7 +21,8 @@ internal fun VideoActivityContent(
     val ui = remember { VideoActivityPageStateHolder(page.autoNextRequest) }
     BindVideoActivityQueue(video, ui, host, page.dependencies.queue) { page.autoNextRequest }
     val fullscreen = page.playerUi.fullscreen || pipMode
-    val alpha = rememberManualProgress(if (fullscreen) 0f else 1f, 200f)
+    // 进小窗要尽快呈现画面，不留 200ms 的遮罩淡出；退出小窗仍保留常规过渡。
+    val alpha = rememberManualProgress(if (fullscreen) 0f else 1f, if (pipMode) 0f else 200f)
     val commentRequest = remember { Triple(route?.commentRoot ?: 0L, route?.commentTarget ?: 0L, route?.seekMs ?: 0L) }
     val pager = androidx.compose.foundation.pager.rememberPagerState(
         initialPage = if (commentRequest.first > 0L) 1 else 0, pageCount = { 3 },

@@ -9,8 +9,8 @@ fun shouldPauseForVideoPageExit(stopOnExit: Boolean, finishing: Boolean, changin
     stopOnExit && finishing && !changingConfiguration
 
 /**
- * 退出视频页是否进入画中画：仅在设置允许、且用户仍有播放意图时进入。
- * 用 playWhenReady 而非 isPlaying——缓冲时 isPlaying=false 但用户并未暂停，仍应进画中画续播。
+ * 退出视频页是否进入画中画：仅在设置允许、且还有画面可续播时进入。
+ * playWhenReady 只代表播放意图——缓冲和播完时它仍为 true，但小窗只会转圈或停着，不放行。
  */
 fun shouldEnterPipOnExit(
     showDiscAfterVideo: Boolean, exitControlIsPip: Boolean, playWhenReady: Boolean,
@@ -18,7 +18,12 @@ fun shouldEnterPipOnExit(
     stillLoading: Boolean = false,
     /** 加载完成后会自动开播；加载中退出时用它代替尚未生效的 playWhenReady。 */
     autoPlay: Boolean = false,
-): Boolean = showDiscAfterVideo && exitControlIsPip && (playWhenReady || (stillLoading && autoPlay))
+    /** 正在缓冲：没有可显示的帧，进小窗只会继续转圈。 */
+    buffering: Boolean = false,
+    /** 已播完（含 auto-next 正在切下一集）：当前没有续播画面。 */
+    ended: Boolean = false,
+): Boolean = showDiscAfterVideo && exitControlIsPip && !buffering && !ended &&
+    (playWhenReady || (stillLoading && autoPlay))
 
 /**
  * 视频页不可见（锁屏、回桌面）时是否只加载音频：继续在后台播放才有意义；
